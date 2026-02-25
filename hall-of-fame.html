@@ -398,6 +398,9 @@
         <div class="hall-header">
             <h1>👑 Hall of Fame</h1>
             <p>Legendary players who made history in DYNAMIC EFOOTBALL COMMUNITY</p>
+            <button id="downloadHallOfFame" class="download-btn" style="margin-top: 20px; padding: 12px 24px; background: linear-gradient(135deg, #FFD700, #FFA500); color: white; border: none; border-radius: 25px; cursor: pointer; font-weight: bold; font-size: 1rem; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3); transition: all 0.3s ease;">
+                📸 Download Hall of Fame as Image
+            </button>
         </div>
 
         <div id="pastWinnersSection">
@@ -416,6 +419,7 @@
     </footer>
 
     <script src="js/api-config.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
         async function loadHallOfFame() {
             const contentDiv = document.getElementById('hallOfFameContent');
@@ -592,7 +596,164 @@
                     });
                 });
             }
+            
+            // Download Hall of Fame functionality
+            const downloadBtn = document.getElementById('downloadHallOfFame');
+            if (downloadBtn) {
+                downloadBtn.addEventListener('click', downloadHallOfFameAsImage);
+            }
         });
+
+        async function downloadHallOfFameAsImage() {
+            const downloadBtn = document.getElementById('downloadHallOfFame');
+            const originalText = downloadBtn.textContent;
+            
+            try {
+                downloadBtn.textContent = '📸 Generating image...';
+                downloadBtn.disabled = true;
+                
+                // Create a special container for the image
+                const imageContainer = createImageContainer();
+                document.body.appendChild(imageContainer);
+                
+                // Wait a bit for rendering
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Generate canvas
+                const canvas = await html2canvas(imageContainer, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: '#ffffff',
+                    width: 375, // iPhone width
+                    height: 812, // iPhone height
+                    windowWidth: 375,
+                    windowHeight: 812
+                });
+                
+                // Convert to blob and download
+                canvas.toBlob(function(blob) {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `hall-of-fame-${new Date().toISOString().split('T')[0]}.png`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    // Clean up
+                    document.body.removeChild(imageContainer);
+                    
+                    downloadBtn.textContent = '✅ Download complete!';
+                    setTimeout(() => {
+                        downloadBtn.textContent = originalText;
+                        downloadBtn.disabled = false;
+                    }, 2000);
+                }, 'image/png');
+                
+            } catch (error) {
+                console.error('Error generating image:', error);
+                downloadBtn.textContent = '❌ Error generating image';
+                setTimeout(() => {
+                    downloadBtn.textContent = originalText;
+                    downloadBtn.disabled = false;
+                }, 2000);
+            }
+        }
+
+        function createImageContainer() {
+            const container = document.createElement('div');
+            container.id = 'hallOfFameImageContainer';
+            container.style.cssText = `
+                position: fixed;
+                top: -9999px;
+                left: -9999px;
+                width: 375px;
+                height: 812px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                padding: 20px;
+                overflow-y: auto;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            `;
+            
+            // Add header
+            const header = document.createElement('div');
+            header.style.cssText = `
+                text-align: center;
+                margin-bottom: 30px;
+                color: white;
+            `;
+            header.innerHTML = `
+                <h1 style="font-size: 28px; margin: 0 0 10px 0; text-shadow: 0 2px 10px rgba(0,0,0,0.3);">👑 Hall of Fame</h1>
+                <p style="font-size: 14px; margin: 0; opacity: 0.9;">DYNAMIC EFOOTBALL COMMUNITY Legends</p>
+                <p style="font-size: 12px; margin: 10px 0 0 0; opacity: 0.7;">Generated: ${new Date().toLocaleDateString()}</p>
+            `;
+            container.appendChild(header);
+            
+            // Add Hall of Fame content
+            const hallOfFameSection = document.createElement('div');
+            hallOfFameSection.style.cssText = `
+                background: rgba(255,255,255,0.1);
+                border-radius: 15px;
+                padding: 20px;
+                margin-bottom: 20px;
+                backdrop-filter: blur(10px);
+            `;
+            
+            // Get the actual Hall of Fame data
+            const hallOfFameContent = document.getElementById('hallOfFameContent');
+            if (hallOfFameContent) {
+                const playerCards = hallOfFameContent.querySelectorAll('.player-card');
+                if (playerCards.length > 0) {
+                    playerCards.forEach((card, index) => {
+                        if (index < 10) { // Limit to 10 cards for image
+                            const clonedCard = card.cloneNode(true);
+                            clonedCard.style.cssText = `
+                                background: white;
+                                border-radius: 12px;
+                                padding: 15px;
+                                margin-bottom: 15px;
+                                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+                                position: relative;
+                            `;
+                            
+                            // Add gold accent bar
+                            const goldBar = document.createElement('div');
+                            goldBar.style.cssText = `
+                                position: absolute;
+                                top: 0;
+                                left: 0;
+                                right: 0;
+                                height: 3px;
+                                background: linear-gradient(90deg, #FFD700, #FFA500, #FFD700);
+                                border-radius: 12px 12px 0 0;
+                            `;
+                            clonedCard.insertBefore(goldBar, clonedCard.firstChild);
+                            
+                            hallOfFameSection.appendChild(clonedCard);
+                        }
+                    });
+                } else {
+                    hallOfFameSection.innerHTML = '<p style="color: white; text-align: center;">No Hall of Fame data available</p>';
+                }
+            }
+            
+            container.appendChild(hallOfFameSection);
+            
+            // Add footer
+            const footer = document.createElement('div');
+            footer.style.cssText = `
+                text-align: center;
+                color: white;
+                font-size: 12px;
+                opacity: 0.8;
+                margin-top: 20px;
+            `;
+            footer.innerHTML = `<p>© 2026 DYNAMIC EFOOTBALL COMMUNITY</p>`;
+            container.appendChild(footer);
+            
+            return container;
+        }
     </script>
 </body>
 </html>
