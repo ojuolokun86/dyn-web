@@ -1,6 +1,34 @@
 // Results page client logic
 document.addEventListener('DOMContentLoaded', () => {
   initResultsPage();
+  
+  // Mobile menu toggle
+  const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+  const navbarNav = document.getElementById('navbarNav');
+  
+  if (mobileMenuToggle && navbarNav) {
+    mobileMenuToggle.addEventListener('click', function() {
+      navbarNav.classList.toggle('active');
+      mobileMenuToggle.textContent = navbarNav.classList.contains('active') ? '✕' : '☰';
+    });
+    
+    // Close menu when clicking outside
+    document.addEventListener('click', function(event) {
+      if (!navbarNav.contains(event.target) && !mobileMenuToggle.contains(event.target)) {
+        navbarNav.classList.remove('active');
+        mobileMenuToggle.textContent = '☰';
+      }
+    });
+    
+    // Close menu when clicking on a link
+    const navLinks = navbarNav.querySelectorAll('a');
+    navLinks.forEach(link => {
+      link.addEventListener('click', function() {
+        navbarNav.classList.remove('active');
+        mobileMenuToggle.textContent = '☰';
+      });
+    });
+  }
 });
 
 let currentEvent = null;

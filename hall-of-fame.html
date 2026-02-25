@@ -383,7 +383,8 @@
             <h1>🏆 DYNAMIC EFOOTBALL COMMUNITY</h1>
             <p class="group-name">Hall of Fame</p>
         </div>
-        <nav>
+        <button class="mobile-menu-toggle" id="mobileMenuToggle">☰</button>
+        <nav class="navbar-nav" id="navbarNav">
             <a href="index.html">Home</a>
             <a href="contenders.html">Contenders</a>
             <a href="vote.html">Vote</a>
@@ -563,6 +564,34 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadPastWinners();
             loadHallOfFame();
+            
+            // Mobile menu toggle
+            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+            const navbarNav = document.getElementById('navbarNav');
+            
+            if (mobileMenuToggle && navbarNav) {
+                mobileMenuToggle.addEventListener('click', function() {
+                    navbarNav.classList.toggle('active');
+                    mobileMenuToggle.textContent = navbarNav.classList.contains('active') ? '✕' : '☰';
+                });
+                
+                // Close menu when clicking outside
+                document.addEventListener('click', function(event) {
+                    if (!navbarNav.contains(event.target) && !mobileMenuToggle.contains(event.target)) {
+                        navbarNav.classList.remove('active');
+                        mobileMenuToggle.textContent = '☰';
+                    }
+                });
+                
+                // Close menu when clicking on a link
+                const navLinks = navbarNav.querySelectorAll('a');
+                navLinks.forEach(link => {
+                    link.addEventListener('click', function() {
+                        navbarNav.classList.remove('active');
+                        mobileMenuToggle.textContent = '☰';
+                    });
+                });
+            }
         });
     </script>
 </body>
