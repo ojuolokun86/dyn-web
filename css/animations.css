@@ -337,8 +337,9 @@
     box-shadow: 
         0 25px 80px rgba(0,0,0,0.15),
         0 10px 30px rgba(102, 126, 234, 0.1),
-        inset 0 1px 0 rgba(255,255,255,0.8);
-    animation: slideInUp 0.8s ease-out;
+        inset 0 1px 0 rgba(255,255,255,0.8),
+        0 0 0 1px rgba(255, 215, 0, 0.3);
+    animation: card3D 6s ease-in-out infinite;
     max-width: 650px;
     width: 85%;
     max-height: 90vh;
@@ -348,8 +349,9 @@
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%) perspective(1000px) rotateX(2deg) rotateY(-2deg);
     z-index: 100;
+    transform-style: preserve-3d;
 }
 
 .past-winner-display::before {
@@ -377,17 +379,22 @@
 }
 
 .past-winner-header h2 {
-    color: transparent;
+    color: #333;
     font-size: 36px;
     margin-bottom: 10px;
-    background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FFD700 100%);
+    background: linear-gradient(135deg, #1a1a2e 0%, #333 50%, #1a1a2e 100%);
     -webkit-background-clip: text;
     background-clip: text;
-    text-shadow: 0 4px 8px rgba(255, 215, 0, 0.2);
+    -webkit-text-fill-color: transparent;
+    text-shadow: 
+        2px 2px 0px rgba(255, 215, 0, 0.5),
+        4px 4px 0px rgba(255, 165, 0, 0.3),
+        0 0 20px rgba(255, 215, 0, 0.4);
     font-weight: 800;
-    letter-spacing: 2px;
+    letter-spacing: 3px;
     text-transform: uppercase;
-    animation: textGlow 2s ease-in-out infinite;
+    animation: textFloat 3s ease-in-out infinite;
+    transform-style: preserve-3d;
 }
 
 @keyframes textGlow {
@@ -398,6 +405,37 @@
     50% { 
         filter: brightness(1.1);
         transform: scale(1.02);
+    }
+}
+
+@keyframes textFloat {
+    0%, 100% { 
+        transform: translateY(0) rotateX(0deg);
+        text-shadow: 
+            2px 2px 0px rgba(255, 215, 0, 0.5),
+            4px 4px 0px rgba(255, 165, 0, 0.3),
+            0 0 20px rgba(255, 215, 0, 0.4);
+    }
+    50% { 
+        transform: translateY(-5px) rotateX(5deg);
+        text-shadow: 
+            2px 4px 0px rgba(255, 215, 0, 0.6),
+            4px 8px 0px rgba(255, 165, 0, 0.4),
+            0 0 30px rgba(255, 215, 0, 0.6);
+    }
+}
+
+@keyframes trophyFloat {
+    0%, 100% { transform: translateX(-50%) translateY(0) rotate(-5deg); }
+    50% { transform: translateX(-50%) translateY(-10px) rotate(5deg); }
+}
+
+@keyframes card3D {
+    0%, 100% { 
+        transform: translate(-50%, -50%) perspective(1000px) rotateX(2deg) rotateY(-2deg);
+    }
+    50% { 
+        transform: translate(-50%, -50%) perspective(1000px) rotateX(-2deg) rotateY(2deg);
     }
 }
 

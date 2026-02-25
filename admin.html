@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Event Creation</title>
     <link rel="stylesheet" href="css/admin-dashboard.css">
+    <link rel="stylesheet" href="css/mobile-responsive.css">
 </head>
 <body>
     <div class="dashboard-wrapper">
@@ -611,12 +612,40 @@
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="hofTeamLogo">Team Logo URL</label>
-                                <input type="url" id="hofTeamLogo" placeholder="https://example.com/team-logo.png">
+                                <label for="hofTeamLogo">Team Logo</label>
+                                <input type="file" id="hofTeamLogo" accept="image/*">
+                                <small style="color: #666; font-size: 12px;">Upload team logo image</small>
                             </div>
                             <div class="form-group">
-                                <label for="hofPlayerImage">Player Image URL</label>
-                                <input type="url" id="hofPlayerImage" placeholder="https://example.com/player.png">
+                                <label for="hofPlayerImage">Player Image</label>
+                                <input type="file" id="hofPlayerImage" accept="image/*">
+                                <small style="color: #666; font-size: 12px;">Upload player photo</small>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="hofEmail">Email Address</label>
+                                <input type="email" id="hofEmail" placeholder="player@example.com">
+                                <small style="color: #666; font-size: 12px;">Player's email for notification</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="hofPhone">Phone Number</label>
+                                <input type="tel" id="hofPhone" placeholder="+1234567890">
+                                <small style="color: #666; font-size: 12px;">Player's phone number</small>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <div id="teamLogoPreview" style="display: none; margin-top: 10px;">
+                                    <img src="" style="max-width: 100px; max-height: 100px; border-radius: 8px; border: 2px solid #FFD700;">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div id="playerImagePreview" style="display: none; margin-top: 10px;">
+                                    <img src="" style="max-width: 100px; max-height: 100px; border-radius: 8px; border: 2px solid #FFD700;">
+                                </div>
                             </div>
                         </div>
 

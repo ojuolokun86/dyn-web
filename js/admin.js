@@ -188,9 +188,9 @@ async function fetchAllContenders() {
 
 // Update Dashboard Stats
 function updateDashboardStats() {
-    // Only count active contenders (not from closed/winner_announced events)
+    // Count all contenders from events that haven't closed or announced winner
     const activeContenders = dashboardState.contenders.filter(c => 
-        c.eventStatus === 'open' || c.eventStatus === 'active' || !c.eventStatus
+        c.eventStatus !== 'closed' && c.eventStatus !== 'winner_announced'
     );
     document.getElementById('totalContenders').textContent = activeContenders.length;
     document.getElementById('totalSpectators').textContent = dashboardState.spectators.length;
@@ -350,8 +350,12 @@ function loadContendersList() {
     }
 
     // Separate contenders by event status
-    const activeContenders = dashboardState.contenders.filter(c => c.eventStatus === 'open' || c.eventStatus === 'active' || !c.eventStatus);
-    const pastContenders = dashboardState.contenders.filter(c => c.eventStatus === 'closed' || c.eventStatus === 'winner_announced');
+    const activeContenders = dashboardState.contenders.filter(c => 
+        c.eventStatus !== 'closed' && c.eventStatus !== 'winner_announced'
+    );
+    const pastContenders = dashboardState.contenders.filter(c => 
+        c.eventStatus === 'closed' || c.eventStatus === 'winner_announced'
+    );
 
     let html = '';
 
@@ -2561,19 +2565,65 @@ async function deleteHallOfFameEntry(entryId) {
 async function handleAddHallOfFame(e) {
     e.preventDefault();
     const token = localStorage.getItem('adminToken');
-
-    const hofData = {
-        player_name: document.getElementById('hofPlayerName').value,
-        league: document.getElementById('hofLeague').value,
-        team_name: document.getElementById('hofTeam').value,
-        season: parseInt(document.getElementById('hofSeason').value) || 1,
-        team_logo: document.getElementById('hofTeamLogo').value,
-        player_image: document.getElementById('hofPlayerImage').value
-    };
-
     const msgDiv = document.getElementById('hallOfFameMessage');
+    
+    msgDiv.innerHTML = '<div class="message">⏳ Uploading images...</div>';
 
     try {
+        // Upload team logo if selected
+        let teamLogoUrl = '';
+        const teamLogoFile = document.getElementById('hofTeamLogo').files[0];
+        if (teamLogoFile) {
+            const logoFormData = new FormData();
+            logoFormData.append('image', teamLogoFile);
+            
+            const logoRes = await fetch(`${API_BASE_URL}/admin/hall-of-fame-web/upload`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: logoFormData
+            });
+            
+            const logoResult = await logoRes.json();
+            if (logoResult.success) {
+                teamLogoUrl = logoResult.url;
+            }
+        }
+
+        // Upload player image if selected
+        let playerImageUrl = '';
+        const playerImageFile = document.getElementById('hofPlayerImage').files[0];
+        if (playerImageFile) {
+            const imageFormData = new FormData();
+            imageFormData.append('image', playerImageFile);
+            
+            const imageRes = await fetch(`${API_BASE_URL}/admin/hall-of-fame-web/upload`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: imageFormData
+            });
+            
+            const imageResult = await imageRes.json();
+            if (imageResult.success) {
+                playerImageUrl = imageResult.url;
+            }
+        }
+
+        // Now submit the Hall of Fame entry
+        const hofData = {
+            player_name: document.getElementById('hofPlayerName').value,
+            league: document.getElementById('hofLeague').value,
+            team_name: document.getElementById('hofTeam').value,
+            season: parseInt(document.getElementById('hofSeason').value) || 1,
+            team_logo: teamLogoUrl,
+            player_image: playerImageUrl,
+            email: document.getElementById('hofEmail').value || '',
+            phone: document.getElementById('hofPhone').value || ''
+        };
+
         const res = await fetch(`${API_BASE_URL}/admin/hall-of-fame-web`, {
             method: 'POST',
             headers: {
@@ -2588,6 +2638,8 @@ async function handleAddHallOfFame(e) {
         if (result.success) {
             msgDiv.innerHTML = '<div class="message success">✅ Hall of Fame entry added!</div>';
             document.getElementById('hallOfFameForm').reset();
+            document.getElementById('teamLogoPreview').style.display = 'none';
+            document.getElementById('playerImagePreview').style.display = 'none';
             setTimeout(() => {
                 toggleForm('add-hall-of-fame-form');
                 loadHallOfFameList();
@@ -2599,5 +2651,48 @@ async function handleAddHallOfFame(e) {
         msgDiv.innerHTML = `<div class="message error">❌ Error: ${err.message}</div>`;
     }
 }
+
+// Image preview functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Team logo preview
+    const teamLogoInput = document.getElementById('hofTeamLogo');
+    if (teamLogoInput) {
+        teamLogoInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('teamLogoPreview');
+                    preview.querySelector('img').src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    // Player image preview
+    const playerImageInput = document.getElementById('hofPlayerImage');
+    if (playerImageInput) {
+        playerImageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('playerImagePreview');
+                    preview.querySelector('img').src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    // Hall of Fame form submission
+    const hallOfFameForm = document.getElementById('hallOfFameForm');
+    if (hallOfFameForm) {
+        hallOfFameForm.addEventListener('submit', handleAddHallOfFame);
+    }
+});
 
 console.log('Modern Admin Dashboard loaded!');

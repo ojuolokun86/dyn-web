@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contenders - DYNAMIC EFOOTBALL COMMUNITY 2026</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/mobile-responsive.css">
     <style>
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -109,15 +110,13 @@
 
         .contender-description {
             font-size: 14px;
-            color: #777;
-            line-height: 1.5;
-            margin: 0;
-            max-height: 60px;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            color: #666;
+            margin: 10px 0;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-clamp: 2;
         }
 
         .view-btn {
@@ -333,11 +332,12 @@
 
     <main>
         <div class="container">
-            <div class="contenders-header" id="headerContent">
-                <h1>Meet the Contenders</h1>
-                <p>Select a contender to view their profile</p>
+            <div class="contenders-header">
+                <h1>Contenders</h1>
+                <p>View and compete with event contenders</p>
+                <button onclick="loadContenders()" style="margin-top: 20px; padding: 10px 20px; background: #fff; color: #667eea; border: none; border-radius: 25px; cursor: pointer; font-weight: bold;">🔄 Refresh Contenders</button>
             </div>
-
+            <p>Select a contender to view their profile</p>
             <div id="contendersContainer" class="contenders-grid"></div>
         </div>
     </main>
@@ -379,28 +379,27 @@
         // Load current event and contenders
         async function loadContenders() {
             try {
-                // Get current active event
-                const eventRes = await fetch(`${API_BASE_URL}/events/current`);
-                const eventResult = await eventRes.json();
-
-                if (!eventResult.success || !eventResult.data) {
-                    showEmpty('No active event at this time');
-                    return;
-                }
-
-                currentEvent = eventResult.data;
-                document.getElementById('headerContent').querySelector('h1').textContent = `${currentEvent.name} - Contenders`;
-
-                // Load contenders for this event
-                const contRes = await fetch(`${API_BASE_URL}/events/${currentEvent.id}/contenders`);
+                console.log('🔄 Loading all contenders from active events...');
+                
+                // Get all contenders from all active events
+                const contRes = await fetch(`${API_BASE_URL}/events/all-contenders?t=${Date.now()}`);
                 const contResult = await contRes.json();
+                
+                console.log('All contenders response:', contResult);
 
                 if (!contResult.success || !contResult.data) {
-                    showEmpty('No contenders yet');
+                    console.log('No contenders found:', contResult);
+                    showEmpty('No contenders available');
                     return;
                 }
 
                 allContenders = contResult.data;
+                console.log('Loaded all contenders:', allContenders);
+                console.log('Number of contenders:', allContenders.length);
+                
+                // Update header
+                document.querySelector('.contenders-header h1').textContent = 'All Active Contenders';
+                
                 renderContenders();
             } catch (err) {
                 console.error('Error loading contenders:', err);
@@ -410,28 +409,74 @@
 
         function renderContenders() {
             const container = document.getElementById('contendersContainer');
+            
+            console.log('🎨 Rendering contenders...');
+            console.log('Container element:', container);
+            console.log('allContenders array:', allContenders);
+            console.log('Length:', allContenders.length);
 
-            if (allContenders.length === 0) {
-                showEmpty('No contenders available');
+            // Filter out contenders from closed or winner_announced events
+            const activeContenders = allContenders.filter(c => 
+                c.eventStatus !== 'closed' && c.eventStatus !== 'winner_announced'
+            );
+            
+            console.log('Active contenders after filtering:', activeContenders);
+
+            if (activeContenders.length === 0) {
+                console.log('No active contenders to render, showing empty state');
+                showEmpty('No active contenders available');
                 return;
             }
 
-            container.innerHTML = allContenders.map(c => `
-                <div class="contender-card" onclick="showDetails('${c.id}')">
-                    <div class="contender-image ${!c.picture ? 'no-image' : ''}">
-                        ${c.picture ? `<img src="${escapeHtml(c.picture)}" alt="${escapeHtml(c.name)}" />` : '🎭'}
-                    </div>
-                    <div class="contender-info">
-                        <h3 class="contender-name">${escapeHtml(c.name)}</h3>
-                        <div class="contender-meta">
-                            ${c.class ? `<span class="meta-tag">📚 ${escapeHtml(c.class)}</span>` : ''}
-                            ${c.country ? `<span class="meta-tag">🌍 ${escapeHtml(c.country)}</span>` : ''}
+            // Group contenders by event
+            const contendersByEvent = {};
+            activeContenders.forEach(contender => {
+                const eventName = contender.event_name || 'Unknown Event';
+                if (!contendersByEvent[eventName]) {
+                    contendersByEvent[eventName] = [];
+                }
+                contendersByEvent[eventName].push(contender);
+            });
+
+            console.log('Contenders grouped by event:', contendersByEvent);
+
+            // Render contenders grouped by event
+            const html = Object.entries(contendersByEvent).map(([eventName, contenders]) => {
+                console.log(`Rendering event "${eventName}" with ${contenders.length} contenders`);
+                return `
+                    <div style="margin-bottom: 40px;">
+                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                            <h3 style="margin: 0; font-size: 20px;">🏆 ${escapeHtml(eventName)}</h3>
+                            <p style="margin: 5px 0 0 0; opacity: 0.9;">${contenders.length} contender${contenders.length > 1 ? 's' : ''}</p>
                         </div>
-                        ${c.description ? `<p class="contender-description">${escapeHtml(c.description)}</p>` : ''}
-                        <button class="view-btn">View Profile →</button>
+                        <div class="contenders-grid">
+                            ${contenders.map(c => {
+                                console.log('Rendering contender:', c);
+                                return `
+                                <div class="contender-card" onclick="showDetails('${c.id}')">
+                                    <div class="contender-image ${!c.picture ? 'no-image' : ''}">
+                                        ${c.picture ? `<img src="${escapeHtml(c.picture)}" alt="${escapeHtml(c.name)}" />` : '🎭'}
+                                    </div>
+                                    <div class="contender-info">
+                                        <h3 class="contender-name">${escapeHtml(c.name)}</h3>
+                                        <div class="contender-meta">
+                                            ${c.class ? `<span class="meta-tag">📚 ${escapeHtml(c.class)}</span>` : ''}
+                                            ${c.country ? `<span class="meta-tag">🌍 ${escapeHtml(c.country)}</span>` : ''}
+                                        </div>
+                                        ${c.description ? `<p class="contender-description">${escapeHtml(c.description)}</p>` : ''}
+                                        <button class="view-btn">View Profile →</button>
+                                    </div>
+                                </div>
+                            `;
+                            }).join('')}
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
+            
+            console.log('Generated HTML length:', html.length);
+            container.innerHTML = html;
+            console.log('✅ Contenders rendered successfully');
         }
 
         function showDetails(contenderId) {

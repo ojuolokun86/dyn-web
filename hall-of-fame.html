@@ -6,6 +6,7 @@
     <title>Hall of Fame - DYNAMIC EFOOTBALL COMMUNITY</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/mobile-responsive.css">
     <style>
         * {
             margin: 0;
@@ -272,6 +273,108 @@
                 font-size: 20px;
             }
         }
+
+        /* Past Winners Section Styles */
+        .section-title {
+            font-size: 32px;
+            color: #FFD700;
+            text-align: center;
+            margin: 40px 0 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .past-winners-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+            padding: 20px;
+        }
+
+        .past-winner-card {
+            background: linear-gradient(145deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
+            border-radius: 20px;
+            padding: 25px;
+            border: 2px solid rgba(255, 215, 0, 0.5);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .past-winner-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(255, 215, 0, 0.3);
+            border-color: #FFD700;
+        }
+
+        .past-winner-card::before {
+            content: '🏆';
+            position: absolute;
+            top: -15px;
+            right: 20px;
+            font-size: 40px;
+            opacity: 0.3;
+        }
+
+        .event-name {
+            font-size: 18px;
+            color: #FFD700;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .winner-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .winner-pic {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #FFD700;
+        }
+
+        .winner-details h4 {
+            font-size: 22px;
+            color: white;
+            margin: 0 0 5px 0;
+        }
+
+        .winner-meta {
+            display: flex;
+            gap: 10px;
+            font-size: 12px;
+        }
+
+        .winner-class, .winner-country {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 4px 12px;
+            border-radius: 15px;
+            color: white;
+        }
+
+        .winner-points {
+            font-size: 28px;
+            color: #FFD700;
+            font-weight: bold;
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .winner-date {
+            font-size: 12px;
+            color: #aaa;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        #pastWinnersSection {
+            margin-bottom: 60px;
+        }
     </style>
 </head>
 <body>
@@ -296,7 +399,13 @@
             <p>Legendary players who made history in DYNAMIC EFOOTBALL COMMUNITY</p>
         </div>
 
+        <div id="pastWinnersSection">
+            <div class="section-title">🏆 Past Event Winners</div>
+            <div id="pastWinnersContent"><div class="loading">Loading past winners...</div></div>
+        </div>
+
         <div id="hallOfFameContent">
+            <div class="section-title">⭐ Hall of Fame Legends</div>
             <div class="loading">Loading Hall of Fame</div>
         </div>
     </div>
@@ -393,8 +502,68 @@
             return div.innerHTML;
         }
 
-        // Load Hall of Fame on page load
-        document.addEventListener('DOMContentLoaded', loadHallOfFame);
+        async function loadPastWinners() {
+            const contentDiv = document.getElementById('pastWinnersContent');
+            
+            try {
+                const res = await fetch(`${API_BASE_URL}/events/past-winners`);
+                const result = await res.json();
+
+                if (!result.success || !result.data || result.data.length === 0) {
+                    contentDiv.innerHTML = `
+                        <div class="empty-state">
+                            <h2>🏆 No Past Winners Yet</h2>
+                            <p>Event winners will be displayed here</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = '<div class="past-winners-grid">';
+                
+                for (const winner of result.data) {
+                    const winnerDate = new Date(winner.ended_at || winner.updated_at).toLocaleDateString();
+                    
+                    html += `
+                        <div class="past-winner-card">
+                            <div class="event-name">${escapeHtml(winner.event_name)}</div>
+                            <div class="winner-info">
+                                ${winner.winner_picture ? 
+                                    `<img src="${escapeHtml(winner.winner_picture)}" class="winner-pic" alt="${escapeHtml(winner.winner_name)}" />` :
+                                    `<div class="winner-pic" style="background: linear-gradient(135deg, #FFD700, #FFA500); display: flex; align-items: center; justify-content: center; font-size: 30px;">👤</div>`
+                                }
+                                <div class="winner-details">
+                                    <h4>${escapeHtml(winner.winner_name)}</h4>
+                                    <div class="winner-meta">
+                                        <span class="winner-class">${escapeHtml(winner.winner_class || 'N/A')}</span>
+                                        <span class="winner-country">${escapeHtml(winner.winner_country || 'N/A')}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="winner-points">${winner.winner_points || 0} Points</div>
+                            <div class="winner-date">Winner announced: ${winnerDate}</div>
+                        </div>
+                    `;
+                }
+                
+                html += '</div>';
+                contentDiv.innerHTML = html;
+            } catch (err) {
+                console.error('Error loading past winners:', err);
+                contentDiv.innerHTML = `
+                    <div class="empty-state">
+                        <h2>❌ Error</h2>
+                        <p>Failed to load past winners. Please try again later.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Load both sections on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPastWinners();
+            loadHallOfFame();
+        });
     </script>
 </body>
 </html>
