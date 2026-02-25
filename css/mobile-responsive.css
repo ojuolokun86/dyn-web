@@ -1089,7 +1089,7 @@ p {
     padding: 0.8rem !important;
     border-radius: 8px !important;
     transition: all 0.3s ease;
-    z-index: 9999 !important;
+    z-index: 99999 !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
     position: fixed !important;
     right: 1rem !important;
@@ -1107,10 +1107,17 @@ p {
 
 /* Force mobile menu to show on small screens */
 @media screen and (max-width: 768px) {
+    .header {
+        position: relative !important;
+        z-index: 99998 !important;
+    }
+    
     .header .mobile-menu-toggle {
         display: block !important;
         visibility: visible !important;
         opacity: 1 !important;
+        position: fixed !important;
+        z-index: 99999 !important;
     }
     
     .header .navbar-nav {
@@ -1125,7 +1132,7 @@ p {
         flex-direction: column;
         padding: 1rem 0;
         gap: 0;
-        z-index: 9998;
+        z-index: 99998;
         max-height: 70vh;
         overflow-y: auto;
     }
