@@ -1079,7 +1079,7 @@ p {
 }
 
 /* ===== HAMBURGER MENU FOR MOBILE ===== */
-.mobile-menu-toggle {
+.header .mobile-menu-toggle {
     display: none;
     background: rgba(255, 255, 255, 0.9);
     border: 1px solid rgba(102, 126, 234, 0.3);
@@ -1091,19 +1091,24 @@ p {
     transition: all 0.3s ease;
     z-index: 1001;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    position: relative;
 }
 
-.mobile-menu-toggle:hover {
+.header .mobile-menu-toggle:hover {
     background-color: rgba(102, 126, 234, 0.1);
     transform: scale(1.05);
 }
 
 @media (max-width: 768px) {
-    .mobile-menu-toggle {
+    .header .mobile-menu-toggle {
         display: block !important;
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
     }
     
-    .navbar-nav {
+    .header .navbar-nav {
         display: none !important;
         position: absolute;
         top: 100%;
@@ -1117,11 +1122,11 @@ p {
         z-index: 1000;
     }
     
-    .navbar-nav.active {
+    .header .navbar-nav.active {
         display: flex !important;
     }
     
-    .navbar-nav a {
+    .header .navbar-nav a {
         padding: 0.8rem 1rem;
         font-size: 0.8rem;
         border-bottom: 1px solid rgba(0, 0, 0, 0.05);
@@ -1131,20 +1136,32 @@ p {
         color: #333;
         text-decoration: none;
         transition: background-color 0.3s ease;
+        margin: 0 !important;
     }
     
-    .navbar-nav a:hover {
+    .header .navbar-nav a:hover {
         background-color: rgba(102, 126, 234, 0.1);
         color: #667eea;
     }
     
-    .navbar-nav a:last-child {
+    .header .navbar-nav a:last-child {
         border-bottom: none;
+    }
+    
+    .header .navbar-nav a.admin-link {
+        background: none !important;
+        color: #333 !important;
+        padding: 0.8rem 1rem !important;
+    }
+    
+    .header .navbar-nav a.admin-link:hover {
+        background-color: rgba(102, 126, 234, 0.1) !important;
+        color: #667eea !important;
     }
 }
 
 @media (max-width: 480px) {
-    .navbar-nav a {
+    .header .navbar-nav a {
         padding: 0.6rem 0.8rem;
         font-size: 0.75rem;
     }
