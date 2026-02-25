@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     loadAdminInfo();
     showSuperadminUIIfNeeded();
+    setupMobileSidebar();
 });
 
 // Check if user is authenticated
@@ -2694,5 +2695,35 @@ document.addEventListener('DOMContentLoaded', function() {
         hallOfFameForm.addEventListener('submit', handleAddHallOfFame);
     }
 });
+
+// Mobile Sidebar Toggle
+function setupMobileSidebar() {
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.querySelector('.sidebar');
+    
+    if (sidebarToggle && sidebar) {
+        sidebarToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('active');
+            sidebarToggle.textContent = sidebar.classList.contains('active') ? '✕' : '☰';
+        });
+        
+        // Close sidebar when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!sidebar.contains(event.target) && !sidebarToggle.contains(event.target)) {
+                sidebar.classList.remove('active');
+                sidebarToggle.textContent = '☰';
+            }
+        });
+        
+        // Close sidebar when clicking on a nav item
+        const navItems = sidebar.querySelectorAll('.nav-item');
+        navItems.forEach(item => {
+            item.addEventListener('click', function() {
+                sidebar.classList.remove('active');
+                sidebarToggle.textContent = '☰';
+            });
+        });
+    }
+}
 
 console.log('Modern Admin Dashboard loaded!');
