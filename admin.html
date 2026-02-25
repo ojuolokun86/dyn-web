@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Event Creation</title>
+    <link rel="stylesheet" href="css/admin-dashboard.css">
+</head>
+<body>
+    <div class="dashboard-wrapper">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo-section">
+                <h2>🏆 Admin</h2>
+                <p>Event Creation</p>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-section="overview">
+                    <span class="icon">📊</span> Overview
+                </a>
+                <a href="#" class="nav-item" data-section="events">
+                    <span class="icon">🎪</span> Events
+                </a>
+                <a href="#" class="nav-item" data-section="contenders">
+                    <span class="icon">👥</span> Contenders
+                </a>
+                <a href="#" id="navPendingRequests" class="nav-item" data-section="pending-requests" style="display:none;">
+                    <span class="icon">🛂</span> Pending Requests
+                </a>
+                <a href="#" class="nav-item" data-section="votes">
+                    <span class="icon">🗳️</span> Votes
+                </a>
+                <a href="#" class="nav-item" data-section="spectators">
+                    <span class="icon">👁️</span> Spectators
+                </a>
+                <a href="#" class="nav-item" data-section="analytics">
+                    <span class="icon">📈</span> Analytics
+                </a>
+                <a href="#" class="nav-item" data-section="past-winners">
+                    <span class="icon">🏆</span> Past Winners
+                </a>
+                <a href="#" class="nav-item" data-section="hall-of-fame">
+                    <span class="icon">👑</span> DYNAMIC EFOOTBALL COMMUNITY Hall of Fame
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button class="btn btn-logout" onclick="logout()">
+                    <span class="icon">🚪</span> Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Header -->
+            <header class="top-header">
+                <div class="header-left">
+                    <h1 id="pageTitle">Dashboard Overview</h1>
+                </div>
+                <div class="header-right">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <a href="index.html" class="btn btn-small">🏠 Home</a>
+                        <div class="admin-info">
+                            <span id="adminUsername">Admin User</span>
+                            <span class="status-badge">Online</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Overview Section -->
+            <section id="overview" class="content-section active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-content">
+                            <h3>Total Contenders</h3>
+                            <p class="stat-number" id="totalContenders">0</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">🗳️</div>
+                        <div class="stat-content">
+                            <h3>Active Votes</h3>
+                            <p class="stat-number" id="totalVotes">0</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">👁️</div>
+                        <div class="stat-content">
+                            <h3>Spectators</h3>
+                            <p class="stat-number" id="totalSpectators">0</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-content">
+                            <h3>Total Votes Cast</h3>
+                            <p class="stat-number" id="totalVotesCast">0</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Events Section -->
+            <section id="events" class="content-section">
+                <div class="section-header">
+                    <h2>Event Management</h2>
+                    <button class="btn btn-primary" onclick="toggleForm('event-form')">+ Create Event</button>
+                    <button class="btn btn-secondary" onclick="toggleForm('event-vote-form')">+ Add Vote Tables</button>
+                </div>
+
+                <div id="event-form" class="form-card hidden">
+                    <div id="eventMessage"></div>
+                    <form id="eventForm">
+                        <div class="form-group">
+                            <label for="eventName">Event Name *</label>
+                            <input type="text" id="eventName" placeholder="e.g., DYNAMIC EFOOTBALL COMMUNITY 2026" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="eventDescription">Description</label>
+                            <textarea id="eventDescription" placeholder="Event description..."></textarea>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Create Event</button>
+                            <button type="button" class="btn btn-secondary" onclick="toggleForm('event-form')">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="event-vote-form" class="form-card hidden">
+                    <div id="eventVoteMessage"></div>
+                    <form id="eventVoteForm">
+                        <div class="form-group">
+                            <label for="voteEventSelect">Select Event *</label>
+                            <select id="voteEventSelect" required>
+                                <option value="">-- Choose an event --</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="voteTableCount">Number of Vote Tables *</label>
+                            <select id="voteTableCount" required onchange="updateVoteTableInputs()">
+                                <option value="">-- Choose --</option>
+                                <option value="1">1 Table</option>
+                                <option value="2">2 Tables</option>
+                                <option value="3">3 Tables</option>
+                            </select>
+                        </div>
+
+                        <div id="voteTablePointsContainer">
+                            <!-- Vote table point inputs will be dynamically added -->
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Create Vote Tables</button>
+                            <button type="button" class="btn btn-secondary" onclick="toggleForm('event-vote-form')">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="currentEventCard" class="event-card hidden">
+                    <div class="event-header">
+                        <div class="event-info">
+                            <h3 id="currentEventName">No Active Event</h3>
+                            <p id="currentEventDescription"></p>
+                            <span id="currentEventStatus" class="event-status-badge"></span>
+                        </div>
+                    </div>
+
+                    <div class="event-actions" id="eventActionButtons">
+                        <!-- Buttons will be added here based on status -->
+                    </div>
+                </div>
+
+                <div id="eventsList" class="list-view">
+                    <p class="empty-state">No events created yet</p>
+                </div>
+
+                <!-- Point Tables Management -->
+                <div class="section-header" style="margin-top:30px;">
+                    <h2>Point Tables & Award Points</h2>
+                </div>
+
+                <div id="pointTablesForm" class="form-card">
+                    <div id="pointTableMessage"></div>
+                    <form id="pointTableForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="pointEventSelect">Select Event *</label>
+                                <select id="pointEventSelect" required onchange="loadPointTables()">
+                                    <option value="">-- Choose an event --</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="pointTableTitle">Point Table Title (e.g., Goals) *</label>
+                                <input type="text" id="pointTableTitle" placeholder="e.g., Goals, Assists, Performance" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="pointTableDefaultPoints">Default Points (e.g. 0.5, 1.1)</label>
+                            <input type="number" id="pointTableDefaultPoints" min="0" step="0.01" value="0">
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Create Point Table</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="pointTablesList" class="list-view" style="margin-top:20px;">
+                    <p class="empty-state">Select an event to view its point tables</p>
+                </div>
+
+                <!-- Award Points Section -->
+                <div class="section-header" style="margin-top:30px;">
+                    <h2>Award Points to Contenders</h2>
+                </div>
+
+                <div id="awardPointsForm" class="form-card">
+                    <div id="awardPointsMessage"></div>
+                    <form id="awardPointsFormElement">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="awardPointEventSelect">Select Event *</label>
+                                <select id="awardPointEventSelect" required>
+                                    <option value="">-- Choose an event --</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="awardPointTableSelect">Select Point Table *</label>
+                                <select id="awardPointTableSelect" required>
+                                    <option value="">-- Choose a point table --</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="awardPointContenderSelect">Select Contender *</label>
+                                <select id="awardPointContenderSelect" required>
+                                    <option value="">-- Choose a contender --</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="awardPointAmount">Multiplier (x) *</label>
+                                <input type="number" id="awardPointAmount" min="0" step="0.0001" value="1" required oninput="calculateTotalPoints()">
+                            </div>
+                        </div>
+
+                        <div class="form-row" style="background:#f5f5f5; padding:15px; border-radius:4px; margin-bottom:15px;">
+                            <div class="form-group" style="flex:1;">
+                                <label style="font-size:12px; color:#666;">Point Table Value</label>
+                                <div id="pointTableValue" style="font-size:18px; font-weight:bold; color:#2ecc71;">-</div>
+                            </div>
+                            <div style="display:flex; align-items:center; margin:0 10px; font-size:24px; color:#999;">×</div>
+                            <div class="form-group" style="flex:1;">
+                                <label style="font-size:12px; color:#666;">Multiplier</label>
+                                <div id="multiplierValue" style="font-size:18px; font-weight:bold; color:#2196F3;">1</div>
+                            </div>
+                            <div style="display:flex; align-items:center; margin:0 10px; font-size:24px; color:#999;">=</div>
+                            <div class="form-group" style="flex:1;">
+                                <label style="font-size:12px; color:#666;">Total Points</label>
+                                <div id="totalPointsDisplay" style="font-size:18px; font-weight:bold; color:#ff9800;">-</div>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Award Points</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="contendersPointsList" class="list-view" style="margin-top:20px;">
+                    <p class="empty-state">Select an event to view contenders and their points</p>
+                </div>
+
+                <!-- Edit/Delete Points Section -->
+                <div class="section-header" style="margin-top:30px;">
+                    <h2>Edit or Delete Point Awards</h2>
+                </div>
+
+                <div id="editDeletePointsForm" class="form-card">
+                    <div id="editPointsMessage"></div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editPointEventSelect">Select Event *</label>
+                            <select id="editPointEventSelect" required onchange="loadPointAwardsForEdit()">
+                                <option value="">-- Choose an event --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="editPointTableSelect">Select Point Table (Optional)</label>
+                            <select id="editPointTableSelect" onchange="loadPointAwardsForEdit()">
+                                <option value="">-- All Point Tables --</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="pointAwardsListForEdit" class="list-view" style="margin-top:20px;">
+                    <p class="empty-state">Select an event to view and edit awards</p>
+                </div>
+            </section>
+
+            <!-- Contenders Section -->
+            <section id="contenders" class="content-section">
+                <div class="section-header">
+                    <h2>Manage Contenders</h2>
+                    <button class="btn btn-primary" onclick="toggleForm('contender-form')">+ Add New</button>
+                </div>
+
+                <div id="contender-form" class="form-card hidden">
+                    <div id="contenderMessage"></div>
+                    <form id="contenderForm">
+                        <div class="form-group">
+                            <label for="contenderEventSelect">Select Event *</label>
+                            <select id="contenderEventSelect" required>
+                                <option value="">-- Choose an event --</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="contenderName">Contender Name *</label>
+                                <input type="text" id="contenderName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="contenderClass">Class/Category *</label>
+                                <input type="text" id="contenderClass" placeholder="e.g., eFootball Player, Pro Striker" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="contenderEmail">Email Address *</label>
+                                <input type="email" id="contenderEmail" placeholder="player@example.com" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="contenderCountry">Country/Region *</label>
+                                <input type="text" id="contenderCountry" placeholder="e.g., Nigeria, USA, UK" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Upload Pictures</label>
+                                <div class="file-input-wrapper">
+                                    <label class="file-input-label" for="contenderPictures">Choose Pictures</label>
+                                    <input type="file" id="contenderPictures" accept="image/*" multiple>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Upload Videos</label>
+                                <div class="file-input-wrapper">
+                                    <label class="file-input-label" for="contenderVideos">Choose Videos</label>
+                                    <input type="file" id="contenderVideos" accept="video/*" multiple>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="picturePreview" class="preview-container"></div>
+                        <div id="videoPreview" class="preview-container"></div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Add Contender</button>
+                            <button type="button" class="btn btn-secondary" onclick="toggleForm('contender-form')">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="contendersList" class="list-view">
+                    <p class="empty-state">No contenders added yet</p>
+                </div>
+            </section>
+
+            <!-- Votes Section -->
+            <section id="votes" class="content-section">
+                <div class="section-header">
+                    <h2>Vote Tables</h2>
+                </div>
+
+                <div class="form-card">
+                    <div id="eventVoteMessage"></div>
+                    <form id="eventVoteFormInline">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="voteEventSelectInline">Select Event *</label>
+                                <select id="voteEventSelectInline" required>
+                                    <option value="">-- Choose an event --</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="voteTableCountInline"># Vote Tables *</label>
+                                <select id="voteTableCountInline" required onchange="updateVoteTableInputsInline()">
+                                    <option value="">--</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="voteTablePointsContainerInline"></div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Create Vote Tables</button>
+                            <button type="button" class="btn btn-secondary" onclick="toggleForm('event-vote-form')">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="section-header" style="margin-top:18px;">
+                    <h3>Existing Vote Tables</h3>
+                    <div></div>
+                </div>
+
+                <div id="voteTablesList" class="list-view">
+                    <p class="empty-state">Select an event to view its vote tables</p>
+                </div>
+
+                <div style="margin-top:18px;">
+                    <button class="btn btn-danger" id="deleteSelectedEventBtn" style="display:none;">Delete Selected Event</button>
+                </div>
+            </section>
+
+            <!-- Spectators Section -->
+            <section id="spectators" class="content-section">
+                <div class="section-header">
+                    <h2>Spectators</h2>
+                </div>
+
+                <div class="spectators-container">
+                    <div class="spectators-stats">
+                        <div class="spec-stat">
+                            <h3>Online Now</h3>
+                            <p class="spec-number" id="onlineSpectators">0</p>
+                        </div>
+                        <div class="spec-stat">
+                            <h3>Total Visits</h3>
+                            <p class="spec-number" id="totalVisits">0</p>
+                        </div>
+                        <div class="spec-stat">
+                            <h3>Avg Session</h3>
+                            <p class="spec-number" id="avgSession">0m</p>
+                        </div>
+                    </div>
+
+                    <div id="spectatorsList" class="list-view">
+                        <p class="empty-state">No spectator data available</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Analytics Section -->
+            <section id="analytics" class="content-section">
+                <div class="section-header">
+                    <h2>Analytics</h2>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 20px; max-width: 300px;">
+                    <label for="analyticsEventSelect">Select Event:</label>
+                    <select id="analyticsEventSelect" class="form-control">
+                        <option value="">-- All Events --</option>
+                    </select>
+                </div>
+
+                <div class="analytics-container">
+                    <div class="analytics-card">
+                        <h3>Point Ranking</h3>
+                        <div id="pointRanking" class="chart-placeholder">
+                            <table class="ranking-table" style="width:100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align:left; padding:10px; border-bottom: 2px solid #ddd;">Rank</th>
+                                        <th style="text-align:left; padding:10px; border-bottom: 2px solid #ddd;">Contender</th>
+                                        <th style="text-align:center; padding:10px; border-bottom: 2px solid #ddd;">Total Points</th>
+                                        <th style="text-align:left; padding:10px; border-bottom: 2px solid #ddd;">Point Breakdown</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pointRankingBody">
+                                    <tr><td colspan="4" style="text-align:center; padding:20px; color:#999;">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="analytics-card">
+                        <h3>Top Contenders</h3>
+                        <div id="topContenders" class="chart-placeholder">
+                            Top contenders will be displayed here
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <!-- Pending Requests (Superadmin) -->
+            <section id="pending-requests" class="content-section">
+                <div class="section-header">
+                    <h2>Pending Admin Requests</h2>
+                </div>
+
+                <div id="pendingRequestsContainer" class="list-view">
+                    <p class="empty-state">No pending requests</p>
+                </div>
+            </section>
+
+            <!-- Past Winners Section -->
+            <section id="past-winners" class="content-section">
+                <div class="section-header">
+                    <h2>🏆 DYNAMIC EFOOTBALL COMMUNITY Past Winners Management</h2>
+                    <button class="btn btn-primary" onclick="toggleForm('add-past-winner-form')">+ Add Past Winner</button>
+                </div>
+
+                <div id="add-past-winner-form" class="form-card hidden">
+                    <div id="pastWinnerMessage"></div>
+                    <form id="pastWinnerForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="pastWinnerName">Winner Name *</label>
+                                <input type="text" id="pastWinnerName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="pastWinnerEvent">Event Name *</label>
+                                <input type="text" id="pastWinnerEvent" placeholder="e.g., DYNAMIC EFOOTBALL COMMUNITY D'or 2025 Season 1" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="pastWinnerClass">Class/Category *</label>
+                                <input type="text" id="pastWinnerClass" placeholder="e.g., eFootball Player" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="pastWinnerCountry">Country *</label>
+                                <input type="text" id="pastWinnerCountry" placeholder="e.g., Nigeria" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="pastWinnerPoints">Points</label>
+                                <input type="number" id="pastWinnerPoints" value="0" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="pastWinnerDate">Winner Date *</label>
+                                <input type="date" id="pastWinnerDate" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="pastWinnerPicture">Profile Picture URL</label>
+                            <input type="url" id="pastWinnerPicture" placeholder="https://example.com/image.jpg">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="pastWinnerVideo">Video URL</label>
+                            <input type="url" id="pastWinnerVideo" placeholder="https://example.com/video.mp4">
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Add Past Winner</button>
+                            <button type="button" class="btn btn-secondary" onclick="toggleForm('add-past-winner-form')">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="pastWinnersList" class="list-view">
+                    <p class="empty-state">Loading past winners...</p>
+                </div>
+            </section>
+
+            <!-- Hall of Fame Section -->
+            <section id="hall-of-fame" class="content-section">
+                <div class="section-header">
+                    <h2>👑 Hall of Fame Management</h2>
+                    <button class="btn btn-primary" onclick="toggleForm('add-hall-of-fame-form')">+ Add Hall of Fame Entry</button>
+                </div>
+
+                <div id="add-hall-of-fame-form" class="form-card hidden">
+                    <div id="hallOfFameMessage"></div>
+                    <form id="hallOfFameForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="hofPlayerName">Player Name *</label>
+                                <input type="text" id="hofPlayerName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="hofLeague">League *</label>
+                                <input type="text" id="hofLeague" placeholder="e.g., Premier League, Champions Cup" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="hofTeam">Team Name *</label>
+                                <input type="text" id="hofTeam" placeholder="e.g., Manchester United" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="hofSeason">Season *</label>
+                                <input type="number" id="hofSeason" placeholder="e.g., 1, 2, 3" min="1" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="hofTeamLogo">Team Logo URL</label>
+                                <input type="url" id="hofTeamLogo" placeholder="https://example.com/team-logo.png">
+                            </div>
+                            <div class="form-group">
+                                <label for="hofPlayerImage">Player Image URL</label>
+                                <input type="url" id="hofPlayerImage" placeholder="https://example.com/player.png">
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Add to Hall of Fame</button>
+                            <button type="button" class="btn btn-secondary" onclick="toggleForm('add-hall-of-fame-form')">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="hallOfFameList" class="list-view">
+                    <p class="empty-state">Loading Hall of Fame entries...</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="js/api-config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>

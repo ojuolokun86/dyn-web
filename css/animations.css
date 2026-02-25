@@ -1,0 +1,646 @@
+/* Animations.css - Beautiful animations for Ballon d'Or */
+
+/* Winner Announcement Animations */
+@keyframes winnerSpotlight {
+    0% {
+        opacity: 0;
+        transform: scale(0.5) rotate(-10deg);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.1) rotate(5deg);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) rotate(0deg);
+    }
+}
+
+@keyframes confettiFall {
+    0% {
+        transform: translateY(-100vh) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+    }
+}
+
+@keyframes glowPulse {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.8),
+                   0 0 40px rgba(255, 215, 0, 0.6),
+                   0 0 60px rgba(255, 215, 0, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(255, 215, 0, 1),
+                   0 0 60px rgba(255, 215, 0, 0.8),
+                   0 0 90px rgba(255, 215, 0, 0.6);
+    }
+}
+
+@keyframes crownFloat {
+    0%, 100% {
+        transform: translateY(0px) rotate(-5deg);
+    }
+    50% {
+        transform: translateY(-10px) rotate(5deg);
+    }
+}
+
+@keyframes textShine {
+    0% {
+        background-position: -200% center;
+    }
+    100% {
+        background-position: 200% center;
+    }
+}
+
+@keyframes medalBounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-20px);
+    }
+    60% {
+        transform: translateY(-10px);
+    }
+}
+
+/* Video Card Animations */
+@keyframes videoCardEntrance {
+    0% {
+        opacity: 0;
+        transform: translateY(50px) scale(0.8);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes videoHover {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes playButtonPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.9;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+}
+
+@keyframes videoBorderGlow {
+    0%, 100% {
+        border-color: rgba(102, 126, 234, 0.5);
+        box-shadow: 0 0 15px rgba(102, 126, 234, 0.3);
+    }
+    50% {
+        border-color: rgba(102, 126, 234, 1);
+        box-shadow: 0 0 25px rgba(102, 126, 234, 0.6);
+    }
+}
+
+/* Winner Display Styles */
+.winner-announcement {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.winner-content {
+    text-align: center;
+    color: white;
+    max-width: 800px;
+    padding: 40px;
+    animation: winnerSpotlight 1s ease-out;
+}
+
+.winner-crown {
+    font-size: 80px;
+    margin-bottom: 20px;
+    animation: crownFloat 2s ease-in-out infinite;
+}
+
+.winner-title {
+    font-size: 48px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    background: linear-gradient(45deg, #FFD700, #FFA500, #FFD700);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: textShine 3s linear infinite;
+    text-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.winner-name {
+    font-size: 36px;
+    margin-bottom: 30px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.winner-video-container {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    margin: 20px auto;
+    max-width: 600px;
+    animation: glowPulse 2s ease-in-out infinite;
+}
+
+.winner-video {
+    width: 100%;
+    height: 400px;
+    object-fit: cover;
+}
+
+.winner-medal {
+    font-size: 60px;
+    margin: 20px 0;
+    animation: medalBounce 1s ease-in-out infinite;
+}
+
+.confetti {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    background: #FFD700;
+    animation: confettiFall 3s linear infinite;
+    z-index: 9998;
+}
+
+/* Video Card Styles for Voting Page */
+.contender-video-card {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+    border: 3px solid transparent;
+    animation: videoCardEntrance 0.6s ease-out;
+    animation-fill-mode: both;
+}
+
+.contender-video-card:hover {
+    transform: translateY(-15px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3);
+    animation: videoBorderGlow 1.5s ease-in-out infinite;
+}
+
+.contender-video-card.selected {
+    border-color: #667eea;
+    transform: scale(1.03);
+    box-shadow: 0 15px 50px rgba(102, 126, 234, 0.4);
+}
+
+.video-container {
+    position: relative;
+    width: 100%;
+    height: 250px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    overflow: hidden;
+}
+
+.video-container video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.video-container:hover video {
+    transform: scale(1.05);
+}
+
+.video-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.video-container:hover .video-overlay {
+    opacity: 1;
+}
+
+.play-button {
+    width: 60px;
+    height: 60px;
+    background: rgba(255,255,255,0.9);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: #667eea;
+    animation: playButtonPulse 2s ease-in-out infinite;
+    cursor: pointer;
+}
+
+.play-button:hover {
+    background: white;
+    transform: scale(1.1);
+}
+
+/* Utility Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .winner-title {
+        font-size: 32px;
+    }
+    
+    .winner-name {
+        font-size: 28px;
+    }
+    
+    .winner-video {
+        height: 250px;
+    }
+    
+    .winner-crown {
+        font-size: 60px;
+    }
+    
+    .contender-video-card {
+        animation-delay: 0.1s;
+    }
+}
+
+/* Past Winner Display Styles - Premium Ballon d'Or Style */
+.past-winner-display {
+    background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 50%, #ffffff 100%);
+    border-radius: 25px;
+    padding: 30px 35px;
+    box-shadow: 
+        0 25px 80px rgba(0,0,0,0.15),
+        0 10px 30px rgba(102, 126, 234, 0.1),
+        inset 0 1px 0 rgba(255,255,255,0.8);
+    animation: slideInUp 0.8s ease-out;
+    max-width: 650px;
+    width: 85%;
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 100;
+}
+
+.past-winner-display::before {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FFD700 100%);
+    border-radius: 30px;
+    z-index: -1;
+    animation: goldShimmer 3s ease-in-out infinite;
+}
+
+@keyframes goldShimmer {
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 1; }
+}
+
+.past-winner-header {
+    text-align: center;
+    margin-bottom: 25px;
+    position: relative;
+}
+
+.past-winner-header h2 {
+    color: transparent;
+    font-size: 36px;
+    margin-bottom: 10px;
+    background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FFD700 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    text-shadow: 0 4px 8px rgba(255, 215, 0, 0.2);
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    animation: textGlow 2s ease-in-out infinite;
+}
+
+@keyframes textGlow {
+    0%, 100% { 
+        filter: brightness(1);
+        transform: scale(1);
+    }
+    50% { 
+        filter: brightness(1.1);
+        transform: scale(1.02);
+    }
+}
+
+.past-winner-header p {
+    font-size: 18px;
+    color: #666;
+    font-weight: 500;
+}
+
+.past-winner-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.past-winner-info {
+    text-align: center;
+    padding: 25px 20px;
+    background: linear-gradient(145deg, #f8f9fa 0%, #ffffff 50%, #f8f9fa 100%);
+    border-radius: 20px;
+    border: 2px solid #e9ecef;
+    box-shadow: 
+        inset 0 2px 4px rgba(0,0,0,0.05),
+        0 5px 15px rgba(0,0,0,0.05);
+    position: relative;
+    overflow: hidden;
+}
+
+.past-winner-info::before {
+    content: '🏆';
+    font-size: 50px;
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    animation: trophyFloat 3s ease-in-out infinite;
+    z-index: 2;
+}
+
+.past-winner-image-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    opacity: 0.15;
+    z-index: 0;
+    filter: blur(2px);
+}
+
+.past-winner-content-overlay {
+    position: relative;
+    z-index: 1;
+}
+
+.past-winner-name {
+    font-size: 36px;
+    font-weight: 800;
+    color: #333;
+    margin-bottom: 15px;
+    margin-top: 15px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    letter-spacing: 1px;
+}
+
+.past-winner-meta {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+}
+
+.past-winner-class,
+.past-winner-country {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+    transition: all 0.3s ease;
+}
+
+.past-winner-class:hover,
+.past-winner-country:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(102, 126, 234, 0.4);
+}
+
+.past-winner-points {
+    font-size: 48px;
+    font-weight: 800;
+    color: transparent;
+    background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FFD700 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    text-shadow: 0 4px 8px rgba(255, 215, 0, 0.3);
+    animation: pointsPulse 2s ease-in-out infinite;
+    margin-top: 5px;
+}
+
+@keyframes pointsPulse {
+    0%, 100% { 
+        transform: scale(1);
+        filter: brightness(1);
+    }
+    50% { 
+        transform: scale(1.05);
+        filter: brightness(1.2);
+    }
+}
+
+.past-winner-video {
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 
+        0 15px 40px rgba(0,0,0,0.2),
+        0 5px 15px rgba(102, 126, 234, 0.15);
+    border: 3px solid #FFD700;
+    position: relative;
+}
+
+.past-winner-video::before {
+    content: '▶';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 60px;
+    color: rgba(255,255,255,0.8);
+    z-index: 10;
+    pointer-events: none;
+    text-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    animation: playIconPulse 2s ease-in-out infinite;
+}
+
+@keyframes playIconPulse {
+    0%, 100% { 
+        opacity: 0.8;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    50% { 
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+}
+
+.past-winner-video video {
+    width: 100%;
+    max-height: 250px;
+    object-fit: cover;
+    display: block;
+}
+
+.past-winner-video:hover::before {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.past-winner-footer {
+    text-align: center;
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 2px solid #e9ecef;
+}
+
+.past-winner-footer p {
+    opacity: 0.7;
+    font-size: 16px;
+    margin-bottom: 20px;
+    color: #666;
+}
+
+.view-results-btn {
+    display: inline-block;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-decoration: none;
+    padding: 15px 35px;
+    border-radius: 30px;
+    font-weight: 700;
+    font-size: 16px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+    box-shadow: 
+        0 8px 20px rgba(102, 126, 234, 0.3),
+        0 4px 10px rgba(0,0,0,0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.view-results-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.5s ease;
+}
+
+.view-results-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 
+        0 12px 30px rgba(102, 126, 234, 0.4),
+        0 6px 15px rgba(0,0,0,0.15);
+}
+
+.view-results-btn:hover::before {
+    left: 100%;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .past-winner-display {
+        margin: 20px auto 0;
+        padding: 35px 25px;
+        border-radius: 25px;
+    }
+    
+    .past-winner-header h2 {
+        font-size: 32px;
+    }
+    
+    .past-winner-name {
+        font-size: 32px;
+    }
+    
+    .past-winner-points {
+        font-size: 42px;
+    }
+    
+    .past-winner-class,
+    .past-winner-country {
+        font-size: 12px;
+        padding: 8px 15px;
+    }
+}

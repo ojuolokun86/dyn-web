@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connection Test - Balloon Dior</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 40px;
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 0.95em;
+        }
+
+        .test-section {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #f5f7fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .test-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .test-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .status-badge.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-badge.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .test-info {
+            font-size: 0.9em;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .url-display {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 0.85em;
+            color: #333;
+            border: 1px solid #ddd;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .results {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.85em;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: #333;
+        }
+
+        .success-text {
+            color: #155724;
+        }
+
+        .error-text {
+            color: #721c24;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            color: #0c5aa0;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+
+        .step {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+
+        .step::before {
+            content: attr(data-step);
+            position: absolute;
+            margin-left: -20px;
+            font-weight: 600;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔌 Connection Test</h1>
+        <p class="subtitle">Verify Backend → Frontend connection</p>
+
+        <!-- Frontend Status -->
+        <div class="test-section">
+            <div class="test-title">📱 Frontend</div>
+            <div class="test-status">
+                <span class="status-badge success">✓ Running</span>
+            </div>
+            <div class="test-info">
+                You're viewing this from:
+                <div class="url-display" id="frontendUrl"></div>
+            </div>
+        </div>
+
+        <!-- Backend Status -->
+        <div class="test-section">
+            <div class="test-title">🎯 Backend</div>
+            <div class="test-status" id="backendStatus">
+                <span class="status-badge pending">⏳ Testing...</span>
+            </div>
+            <div class="test-info">
+                Attempting to connect to:
+                <div class="url-display" id="backendUrl"></div>
+            </div>
+        </div>
+
+        <!-- CORS Status -->
+        <div class="test-section">
+            <div class="test-title">🔓 CORS</div>
+            <div class="test-status" id="corsStatus">
+                <span class="status-badge pending">⏳ Testing...</span>
+            </div>
+            <div class="test-info" id="corsInfo">
+                Testing cross-origin request...
+            </div>
+        </div>
+
+        <!-- API Test -->
+        <div class="test-section">
+            <div class="test-title">⚡ API Endpoints</div>
+            <button onclick="testHealthEndpoint()" id="healthBtn">Test /api/health</button>
+            <button onclick="testEventsEndpoint()" id="eventsBtn">Test /api/events/current</button>
+            <div class="results" id="apiResults" style="display:none;"></div>
+        </div>
+
+        <!-- Manual Test -->
+        <div class="test-section">
+            <div class="test-title">🧪 Manual Test</div>
+            <button onclick="runAllTests()">Run All Tests</button>
+        </div>
+
+        <!-- Instructions -->
+        <div class="info-box">
+            <strong>💡 If tests fail:</strong>
+            <div class="step" data-step="1."> Make sure backend is running: <code>cd backend && npm run dev</code></div>
+            <div class="step" data-step="2."> Check backend .env CORS_ORIGIN includes frontend address</div>
+            <div class="step" data-step="3."> Open browser DevTools (F12) → Console tab for detailed errors</div>
+            <div class="step" data-step="4."> Refresh this page after starting backend</div>
+        </div>
+    </div>
+
+    <script src="js/api-config.js"></script>
+    <script>
+        // Set URLs
+        document.getElementById('frontendUrl').textContent = window.location.origin;
+        document.getElementById('backendUrl').textContent = window.BACKEND_URL;
+
+        // Auto-run tests on load
+        window.addEventListener('load', async () => {
+            await runAutoTests();
+        });
+
+        async function runAutoTests() {
+            await testBackendConnection();
+            await testCORSConnection();
+        }
+
+        async function testBackendConnection() {
+            const statusDiv = document.getElementById('backendStatus');
+            
+            try {
+                const response = await fetch(`${window.BACKEND_URL}/api/health`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    statusDiv.innerHTML = '<span class="status-badge success">✓ Online</span>';
+                    console.log('✅ Backend is running:', data);
+                } else {
+                    statusDiv.innerHTML = `<span class="status-badge error">✗ Error ${response.status}</span>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = '<span class="status-badge error">✗ Cannot Connect</span>';
+                console.error('❌ Backend connection failed:', error.message);
+            }
+        }
+
+        async function testCORSConnection() {
+            const corsDiv = document.getElementById('corsStatus');
+            const corsInfo = document.getElementById('corsInfo');
+            
+            try {
+                const response = await fetch(`${window.BACKEND_URL}/api/health`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (response.ok) {
+                    corsDiv.innerHTML = '<span class="status-badge success">✓ CORS OK</span>';
+                    corsInfo.textContent = 'Cross-origin requests are allowed ✅';
+                    console.log('✅ CORS is working');
+                } else {
+                    corsDiv.innerHTML = '<span class="status-badge error">✗ CORS Error</span>';
+                    corsInfo.textContent = `Status ${response.status}: Check backend CORS_ORIGIN setting`;
+                }
+            } catch (error) {
+                corsDiv.innerHTML = '<span class="status-badge error">✗ CORS Blocked</span>';
+                corsInfo.textContent = `CORS Error: ${error.message}`;
+                console.error('❌ CORS Error:', error);
+            }
+        }
+
+        async function testHealthEndpoint() {
+            const resultsDiv = document.getElementById('apiResults');
+            resultsDiv.style.display = 'block';
+            resultsDiv.textContent = '⏳ Testing...';
+
+            try {
+                const response = await fetch(`${window.BACKEND_URL}/api/health`);
+                const data = await response.json();
+                
+                resultsDiv.classList.remove('error-text');
+                resultsDiv.classList.add('success-text');
+                resultsDiv.textContent = '✅ SUCCESS\n\n' + JSON.stringify(data, null, 2);
+                console.log('✅ Health check passed:', data);
+            } catch (error) {
+                resultsDiv.classList.remove('success-text');
+                resultsDiv.classList.add('error-text');
+                resultsDiv.textContent = '❌ ERROR\n\n' + error.message;
+                console.error('❌ Health check failed:', error);
+            }
+        }
+
+        async function testEventsEndpoint() {
+            const resultsDiv = document.getElementById('apiResults');
+            resultsDiv.style.display = 'block';
+            resultsDiv.textContent = '⏳ Testing...';
+
+            try {
+                const response = await fetch(`${window.BACKEND_URL}/api/events/current`);
+                const data = await response.json();
+                
+                resultsDiv.classList.remove('error-text');
+                resultsDiv.classList.add('success-text');
+                resultsDiv.textContent = '✅ SUCCESS\n\n' + JSON.stringify(data, null, 2);
+                console.log('✅ Events endpoint passed:', data);
+            } catch (error) {
+                resultsDiv.classList.remove('success-text');
+                resultsDiv.classList.add('error-text');
+                resultsDiv.textContent = '❌ ERROR\n\n' + error.message;
+                console.error('❌ Events endpoint failed:', error);
+            }
+        }
+
+        async function runAllTests() {
+            console.clear();
+            console.log('🧪 Running all connection tests...\n');
+            
+            await testBackendConnection();
+            console.log('');
+            
+            await testCORSConnection();
+            console.log('');
+            
+            await testHealthEndpoint();
+            console.log('');
+            
+            console.log('✅ All tests completed!');
+        }
+    </script>
+</body>
+</html>

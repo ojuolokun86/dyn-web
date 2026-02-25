@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Balloon Dior</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/admin-login.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <div class="login-header">
+                <h1>Admin Dashboard</h1>
+                <p>Balloon Dior Management</p>
+            </div>
+
+            <div id="loginMessage"></div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input 
+                        type="text" 
+                        id="username" 
+                        name="username" 
+                        placeholder="Enter your username"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        placeholder="Enter your password"
+                        required
+                    >
+                </div>
+
+                <button type="submit" class="btn btn-login">Login</button>
+            </form>
+
+            <div class="login-footer">
+                <p>Demo Credentials:</p>
+                <p><small>Username: admin | Password: admin123</small></p>
+                <p style="margin-top: 15px; border-top: 1px solid #ddd; padding-top: 15px;">
+                    Don't have credentials? 
+                    <a href="admin-register.html" style="color: #667eea; text-decoration: none; font-weight: 600;">Apply for admin access</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api-config.js"></script>
+    <script src="js/admin-login.js"></script>
+</body>
+</html>

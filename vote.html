@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vote - DYNAMIC EFOOTBALL COMMUNITY 2026</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .vote-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 60px 40px;
+        }
+
+        .vote-header {
+            text-align: center;
+            color: white;
+            margin-bottom: 80px;
+        }
+
+        .vote-header h1 {
+            font-size: 48px;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .vote-header p {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        .vote-event-info {
+            background: rgba(255,255,255,0.15);
+            border-radius: 15px;
+            padding: 20px 30px;
+            margin-bottom: 60px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            text-align: center;
+        }
+
+        .vote-event-info h3 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .vote-event-info p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .vote-layout {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 50px;
+        }
+
+        /* Left side - Contenders Grid */
+        .vote-contenders-section h2 {
+            color: white;
+            font-size: 28px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .contenders-vote-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 50px 45px;
+        }
+
+        .contender-vote-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 3px solid transparent;
+        }
+
+        .contender-vote-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 18px 45px rgba(0,0,0,0.18);
+        }
+
+        .contender-vote-card.selected {
+            border-color: #667eea;
+            transform: scale(1.02);
+            box-shadow: 0 15px 50px rgba(102, 126, 234, 0.4);
+        }
+
+        .vote-card-image {
+            width: 100%;
+            height: 300px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .vote-card-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .vote-card-image.no-image {
+            font-size: 80px;
+            color: rgba(255,255,255,0.2);
+        }
+
+        .vote-card-content {
+            padding: 28px 25px;
+        }
+
+        .vote-card-name {
+            font-size: 22px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .vote-card-meta {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .vote-meta-tag {
+            background: #f0f0f0;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .vote-card-description {
+            font-size: 14px;
+            color: #777;
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        .vote-card-button {
+            width: 100%;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .vote-card-button:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .contender-vote-card.selected .vote-card-button {
+            background: #667eea;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        /* Right side - Vote Sidebar */
+        .vote-sidebar {
+            position: sticky;
+            top: 30px;
+        }
+
+        .vote-sidebar-card {
+            background: white;
+            border-radius: 20px;
+            padding: 35px 30px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+            margin-bottom: 30px;
+        }
+
+        .vote-sidebar-card h3 {
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .selected-contender-display {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .vote-tables-section {
+            margin-bottom: 25px;
+        }
+
+        .vote-tables-section label {
+            display: block;
+            margin-bottom: 12px;
+            cursor: pointer;
+        }
+
+        .vote-tables-section input[type="radio"] {
+            margin-right: 10px;
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+            accent-color: #667eea;
+        }
+
+        .vote-tables-section .label-text {
+            color: #333;
+            font-weight: 500;
+            display: inline;
+        }
+
+        .vote-tables-note {
+            background: #f5f5f5;
+            padding: 12px 15px;
+            border-radius: 10px;
+            font-size: 13px;
+            color: #666;
+            margin-top: 15px;
+        }
+
+        .cast-vote-button {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 700;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .cast-vote-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .cast-vote-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .vote-message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: 500;
+            animation: slideIn 0.3s ease;
+        }
+
+        .vote-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .vote-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .vote-message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 60px 20px;
+            color: white;
+        }
+
+        .empty-state h3 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            font-size: 16px;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 1024px) {
+            .vote-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .vote-sidebar {
+                position: static;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .vote-container {
+                padding: 40px 20px;
+            }
+
+            .vote-header h1 {
+                font-size: 36px;
+            }
+
+            .contenders-vote-grid {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 35px 30px;
+            }
+
+            .vote-sidebar-card {
+                padding: 25px 20px;
+            }
+        }
+
+        /* Loading state */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo">
+            <h1>🏆 DYNAMIC EFOOTBALL COMMUNITY 2026</h1>
+            <p class="group-name">Hosted by DYNAMIC EFOOTBALL GROUP</p>
+        </div>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="contenders.html">Contenders</a>
+            <a href="vote.html" class="active">Vote</a>
+            <a href="results.html">Results</a>
+            <a href="admin-login.html" class="admin-link">🔐 Admin</a>
+        </nav>
+    </header>
+
+    <main class="vote-container">
+        <div class="vote-header">
+            <h1>Cast Your Vote</h1>
+            <p>Select a contender and vote for your favorite player</p>
+        </div>
+
+        <div class="vote-event-info" id="eventInfoSection">
+            <h3>Loading event information...</h3>
+        </div>
+
+        <div class="vote-layout">
+            <!-- Left: Contenders Grid -->
+            <section class="vote-contenders-section">
+                <h2>Contenders</h2>
+                <div class="contenders-vote-grid" id="contendersVoteGrid">
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <h3>Loading contenders...</h3>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right: Vote Sidebar -->
+            <aside class="vote-sidebar">
+                <div class="vote-sidebar-card">
+                    <h3>🗳️ Your Vote</h3>
+                    
+                    <div class="selected-contender-display" id="selectedDisplay">
+                        Select a contender to vote
+                    </div>
+
+                    <div class="vote-tables-section" id="voteTables">
+                        <p style="color: #666; font-weight: 500;">Loading vote options...</p>
+                    </div>
+
+                    <button class="cast-vote-button" id="castVoteBtn" disabled>
+                        Cast Vote
+                    </button>
+
+                    <div id="voteMessage"></div>
+
+                .vote-header h1 {
+                    font-size: 36px;
+                }
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <footer>
+        <p>© 2026 DYNAMIC EFOOTBALL COMMUNITY Project</p>
+    </footer>
+
+    <script src="js/api-config.js"></script>
+    <script>
+        // Vote page logic
+        let currentEvent = null;
+        let contenders = [];
+        let voteTables = [];
+        let selectedContenderId = null;
+        let selectedTableId = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initVotePage();
+        });
+
+        async function initVotePage() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/events/current`);
+                const evt = await res.json();
+
+                if (!evt.success || !evt.data) {
+                    document.getElementById('eventInfoSection').innerHTML = 
+                        '<h3>No active event</h3><p>Please try again later</p>';
+                    return;
+                }
+
+                currentEvent = evt.data;
+                displayEventInfo();
+                await Promise.all([loadVoteTables(), loadContenders()]);
+            } catch (err) {
+                console.error('Error initializing:', err);
+                document.getElementById('eventInfoSection').innerHTML = 
+                    '<h3>Error loading event</h3>';
+            }
+        }
+
+        function displayEventInfo() {
+            const section = document.getElementById('eventInfoSection');
+            section.innerHTML = `
+                <h3>${escapeHtml(currentEvent.name)}</h3>
+                <p>${escapeHtml(currentEvent.description || 'Cast your vote now')}</p>
+            `;
+        }
+
+        async function loadVoteTables() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/events/${currentEvent.id}/vote-tables`);
+                const result = await res.json();
+
+                if (!result.success || !result.data) {
+                    voteTables = [];
+                    updateVoteTablesUI();
+                    return;
+                }
+
+                voteTables = result.data || [];
+                updateVoteTablesUI();
+            } catch (err) {
+                console.error('Error loading vote tables:', err);
+            }
+        }
+
+        function updateVoteTablesUI() {
+            const container = document.getElementById('voteTables');
+            
+            if (voteTables.length === 0) {
+                container.innerHTML = '<p style="color: #666; font-weight: 500;">No vote tables available</p>';
+                return;
+            }
+
+            container.innerHTML = voteTables.map(vt => `
+                <label>
+                    <input type="radio" name="voteTable" value="${vt.id}" data-points="${vt.points_per_vote}">
+                    <span class="label-text">Vote Table ${vt.table_number} — ${vt.points_per_vote} pts</span>
+                </label>
+            `).join('') + '<div class="vote-tables-note">💡 Higher points = stronger impact on ranking</div>';
+
+            container.querySelectorAll('input[name="voteTable"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    selectedTableId = e.target.value;
+                    updateCastButtonState();
+                });
+            });
+        }
+
+        async function loadContenders() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/events/${currentEvent.id}/contenders`);
+                const result = await res.json();
+
+                if (!result.success || !result.data) {
+                    contenders = [];
+                    displayContenders();
+                    return;
+                }
+
+                contenders = result.data || [];
+                displayContenders();
+            } catch (err) {
+                console.error('Error loading contenders:', err);
+            }
+        }
+
+        function displayContenders() {
+            const grid = document.getElementById('contendersVoteGrid');
+
+            if (contenders.length === 0) {
+                grid.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;"><h3>No contenders</h3></div>';
+                return;
+            }
+
+            grid.innerHTML = contenders.map(c => `
+                <div class="contender-vote-card" data-id="${c.id}">
+                    <div class="vote-card-image ${!c.picture ? 'no-image' : ''}">
+                        ${c.picture ? `<img src="${c.picture}" alt="${escapeHtml(c.name)}">` : '👤'}
+                    </div>
+                    <div class="vote-card-content">
+                        <h3 class="vote-card-name">${escapeHtml(c.name)}</h3>
+                        <div class="vote-card-meta">
+                            <span class="vote-meta-tag">${escapeHtml(c.class || '')}</span>
+                            <span class="vote-meta-tag">${escapeHtml(c.country || '')}</span>
+                        </div>
+                        <p class="vote-card-description">${escapeHtml(c.description || '')}</p>
+                        <button class="vote-card-button">Select to Vote</button>
+                    </div>
+                </div>
+            `).join('');
+
+            grid.querySelectorAll('.contender-vote-card').forEach(card => {
+                card.addEventListener('click', () => selectContender(card.getAttribute('data-id')));
+            });
+        }
+
+        function selectContender(id) {
+            // Remove previous selection
+            document.querySelectorAll('.contender-vote-card').forEach(c => {
+                c.classList.remove('selected');
+            });
+
+            // Add selection to clicked card
+            document.querySelector(`[data-id="${id}"]`).classList.add('selected');
+
+            selectedContenderId = id;
+            const contender = contenders.find(c => c.id === id);
+
+            if (contender) {
+                document.getElementById('selectedDisplay').innerHTML = 
+                    `<span>✓ ${escapeHtml(contender.name)}</span>`;
+            }
+
+            updateCastButtonState();
+            document.getElementById('voteMessage').innerHTML = '';
+        }
+
+        function updateCastButtonState() {
+            const btn = document.getElementById('castVoteBtn');
+            const hasSelection = selectedContenderId !== null;
+            const hasTable = selectedTableId !== null || voteTables.length === 0;
+            
+            btn.disabled = !(hasSelection && hasTable);
+        }
+
+        document.getElementById('castVoteBtn').addEventListener('click', handleCastVote);
+
+        async function handleCastVote() {
+            const messageDiv = document.getElementById('voteMessage');
+            messageDiv.innerHTML = '';
+
+            if (!selectedContenderId) {
+                messageDiv.innerHTML = '<div class="vote-message error">Please select a contender</div>';
+                return;
+            }
+
+            if (voteTables.length > 0 && !selectedTableId) {
+                messageDiv.innerHTML = '<div class="vote-message error">Please select a vote table</div>';
+                return;
+            }
+
+            try {
+                messageDiv.innerHTML = '<div class="vote-message info"><span class="loading-spinner"></span> Saving vote...</div>';
+
+                const payload = {
+                    contenderId: selectedContenderId,
+                    voteTableId: selectedTableId || null
+                };
+
+                const res = await fetch(`${API_BASE_URL}/events/${currentEvent.id}/vote`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await res.json();
+
+                if (res.ok && result.success) {
+                    messageDiv.innerHTML = `<div class="vote-message success">✓ Vote recorded! Thank you for voting.</div>`;
+                    
+                    // Reset selection
+                    setTimeout(() => {
+                        selectedContenderId = null;
+                        selectedTableId = null;
+                        document.querySelectorAll('.contender-vote-card').forEach(c => c.classList.remove('selected'));
+                        document.getElementById('selectedDisplay').textContent = 'Select a contender to vote';
+                        document.querySelectorAll('input[name="voteTable"]').forEach(r => r.checked = false);
+                        updateCastButtonState();
+                        messageDiv.innerHTML = '';
+                    }, 2000);
+                } else {
+                    messageDiv.innerHTML = `<div class="vote-message error">Error: ${result.error || 'Unable to record vote'}</div>`;
+                }
+            } catch (err) {
+                console.error('Vote error:', err);
+                messageDiv.innerHTML = '<div class="vote-message error">Error recording vote. Please try again.</div>';
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return String(text).replace(/[&<>"]+/g, c => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;'
+            }[c] || c));
+        }
+    </script>
+</body>
+</html>
