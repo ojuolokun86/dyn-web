@@ -21,6 +21,9 @@
                 <a href="#" class="nav-item active" data-section="overview">
                     <span class="icon">📊</span> Overview
                 </a>
+                <a href="#" class="nav-item" data-section="hall-of-fame">
+                    <span class="icon">👑</span> DYNAMIC EFOOTBALL COMMUNITY Hall of Fame
+                </a>
                 <a href="#" class="nav-item" data-section="events">
                     <span class="icon">🎪</span> Events
                 </a>
@@ -41,9 +44,6 @@
                 </a>
                 <a href="#" class="nav-item" data-section="past-winners">
                     <span class="icon">🏆</span> Past Winners
-                </a>
-                <a href="#" class="nav-item" data-section="hall-of-fame">
-                    <span class="icon">👑</span> DYNAMIC EFOOTBALL COMMUNITY Hall of Fame
                 </a>
             </nav>
 
@@ -527,44 +527,50 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="pastWinnerName">Winner Name *</label>
-                                <input type="text" id="pastWinnerName" required>
+                                <input type="text" id="pastWinnerName" name="name" required>
                             </div>
                             <div class="form-group">
                                 <label for="pastWinnerEvent">Event Name *</label>
-                                <input type="text" id="pastWinnerEvent" placeholder="e.g., DYNAMIC EFOOTBALL COMMUNITY D'or 2025 Season 1" required>
+                                <input type="text" id="pastWinnerEvent" name="event_name" placeholder="e.g., DYNAMIC EFOOTBALL COMMUNITY D'or 2025 Season 1" required>
                             </div>
                         </div>
 
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="pastWinnerClass">Class/Category *</label>
-                                <input type="text" id="pastWinnerClass" placeholder="e.g., eFootball Player" required>
+                                <input type="text" id="pastWinnerClass" name="class" placeholder="e.g., eFootball Player" required>
                             </div>
                             <div class="form-group">
                                 <label for="pastWinnerCountry">Country *</label>
-                                <input type="text" id="pastWinnerCountry" placeholder="e.g., Nigeria" required>
+                                <input type="text" id="pastWinnerCountry" name="country" placeholder="e.g., Nigeria" required>
                             </div>
                         </div>
 
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="pastWinnerPoints">Points</label>
-                                <input type="number" id="pastWinnerPoints" value="0" min="0">
+                                <input type="number" id="pastWinnerPoints" name="points" value="0" min="0">
                             </div>
                             <div class="form-group">
                                 <label for="pastWinnerDate">Winner Date *</label>
-                                <input type="date" id="pastWinnerDate" required>
+                                <input type="date" id="pastWinnerDate" name="date" required>
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label for="pastWinnerPicture">Profile Picture URL</label>
-                            <input type="url" id="pastWinnerPicture" placeholder="https://example.com/image.jpg">
+                            <label for="pastWinnerPicture">Profile Picture</label>
+                            <div class="file-upload-wrapper">
+                                <input type="file" id="pastWinnerPicture" accept="image/*" onchange="previewPastWinnerImage(this)">
+                                <div id="pastWinnerImagePreview" class="image-preview" style="display: none;">
+                                    <img src="" alt="Preview">
+                                    <button type="button" class="remove-image-btn" onclick="removePastWinnerImage()">×</button>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="form-group">
                             <label for="pastWinnerVideo">Video URL</label>
-                            <input type="url" id="pastWinnerVideo" placeholder="https://example.com/video.mp4">
+                            <input type="url" id="pastWinnerVideo" name="video" placeholder="https://example.com/video.mp4">
                         </div>
 
                         <div class="form-actions">
@@ -583,7 +589,10 @@
             <section id="hall-of-fame" class="content-section">
                 <div class="section-header">
                     <h2>👑 Hall of Fame Management</h2>
-                    <button class="btn btn-primary" onclick="toggleForm('add-hall-of-fame-form')">+ Add Hall of Fame Entry</button>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-primary" onclick="toggleForm('add-hall-of-fame-form')">+ Add Hall of Fame Entry</button>
+                        <button class="btn btn-secondary" onclick="downloadHallOfFameAsImage()">📸 Download Instagram Poster</button>
+                    </div>
                 </div>
 
                 <div id="add-hall-of-fame-form" class="form-card hidden">
@@ -659,6 +668,87 @@
 
                 <div id="hallOfFameList" class="list-view">
                     <p class="empty-state">Loading Hall of Fame entries...</p>
+                </div>
+                
+                <!-- Edit Hall of Fame Modal -->
+                <div id="editHallOfFameModal" class="modal" style="display: none;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>✏️ Edit Hall of Fame Entry</h3>
+                            <span class="close-modal" onclick="closeEditHallOfFameModal()">&times;</span>
+                        </div>
+                        <div class="modal-body">
+                            <div id="editHallOfFameMessage"></div>
+                            <form id="editHallOfFameForm">
+                                <input type="hidden" id="editHofId" name="hofId">
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="editHofPlayerName">Player Name *</label>
+                                        <input type="text" id="editHofPlayerName" name="editHofPlayerName" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editHofLeague">League *</label>
+                                        <input type="text" id="editHofLeague" name="editHofLeague" placeholder="e.g., Premier League, Champions Cup" required>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="editHofTeam">Team Name *</label>
+                                        <input type="text" id="editHofTeam" name="editHofTeam" placeholder="e.g., Manchester United" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editHofSeason">Season *</label>
+                                        <input type="number" id="editHofSeason" name="editHofSeason" placeholder="e.g., 1, 2, 3" min="1" required>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="editHofPlayerImage">Player Image</label>
+                                        <input type="file" id="editHofPlayerImage" name="editHofPlayerImage" accept="image/*" style="cursor: pointer;">
+                                        <div id="editPlayerImagePreview" style="display: none; margin-top: 10px;">
+                                            <img src="" style="max-width: 100px; max-height: 100px; border-radius: 8px; border: 2px solid #FFD700;">
+                                        </div>
+                                        <small style="color: #666; font-size: 12px;">Upload player photo (drag & drop supported)</small>
+                                        <div style="margin-top: 5px;">
+                                            <button type="button" class="btn btn-small btn-secondary" onclick="document.getElementById('editHofPlayerImage').click()">Browse Files</button>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editHofTeamLogo">Team Logo</label>
+                                        <input type="file" id="editHofTeamLogo" accept="image/*" style="cursor: pointer;">
+                                        <div id="editTeamLogoPreview" style="display: none; margin-top: 10px;">
+                                            <img src="" style="max-width: 100px; max-height: 100px; border-radius: 8px; border: 2px solid #FFD700;">
+                                        </div>
+                                        <small style="color: #666; font-size: 12px;">Upload team logo (drag & drop supported)</small>
+                                        <div style="margin-top: 5px;">
+                                            <button type="button" class="btn btn-small btn-secondary" onclick="document.getElementById('editHofTeamLogo').click()">Browse Files</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="editHofEmail">Email Address</label>
+                                        <input type="email" id="editHofEmail" name="editHofEmail" placeholder="player@example.com">
+                                        <small style="color: #666; font-size: 12px;">Player's email for notification</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editHofPhone">Phone Number</label>
+                                        <input type="tel" id="editHofPhone" name="editHofPhone" placeholder="+1234567890">
+                                        <small style="color: #666; font-size: 12px;">Player's phone number</small>
+                                    </div>
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="button" class="btn btn-secondary" onclick="closeEditHallOfFameModal()">Cancel</button>
+                                    <button type="submit" class="btn btn-primary">Update Entry</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </section>
         </main>

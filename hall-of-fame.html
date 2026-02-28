@@ -612,22 +612,26 @@
                 downloadBtn.textContent = '📸 Generating image...';
                 downloadBtn.disabled = true;
                 
-                // Create a special container for the image
-                const imageContainer = createImageContainer();
+                // Fetch fresh data from API
+                const res = await fetch(`${API_BASE_URL}/admin/hall-of-fame-web`);
+                const result = await res.json();
+                
+                if (!result.success || !result.data) {
+                    throw new Error('Failed to fetch hall of fame data');
+                }
+                
+                // Create Instagram poster from raw API data
+                const imageContainer = createInstagramPoster(result.data);
                 document.body.appendChild(imageContainer);
                 
-                // Wait a bit for rendering
+                // Wait for rendering
                 await new Promise(resolve => setTimeout(resolve, 500));
                 
                 // Generate canvas
                 const canvas = await html2canvas(imageContainer, {
                     scale: 2,
                     useCORS: true,
-                    backgroundColor: '#ffffff',
-                    width: 375, // iPhone width
-                    height: 812, // iPhone height
-                    windowWidth: 375,
-                    windowHeight: 812
+                    backgroundColor: '#ffffff'
                 });
                 
                 // Convert to blob and download
@@ -661,95 +665,122 @@
             }
         }
 
-        function createImageContainer() {
+        function createInstagramPoster(hallOfFameData) {
             const container = document.createElement('div');
-            container.id = 'hallOfFameImageContainer';
+            container.id = 'instagramPoster';
             container.style.cssText = `
                 position: fixed;
                 top: -9999px;
                 left: -9999px;
-                width: 375px;
-                height: 812px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                padding: 20px;
-                overflow-y: auto;
+                width: 1080px;
+                padding: 60px;
+                background: white;
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                color: #1a1a1a;
+                line-height: 1.6;
             `;
             
-            // Add header
+            // Header
             const header = document.createElement('div');
             header.style.cssText = `
                 text-align: center;
-                margin-bottom: 30px;
-                color: white;
+                margin-bottom: 60px;
+                border-bottom: 4px solid #FFD700;
+                padding-bottom: 30px;
             `;
             header.innerHTML = `
-                <h1 style="font-size: 28px; margin: 0 0 10px 0; text-shadow: 0 2px 10px rgba(0,0,0,0.3);">👑 Hall of Fame</h1>
-                <p style="font-size: 14px; margin: 0; opacity: 0.9;">DYNAMIC EFOOTBALL COMMUNITY Legends</p>
-                <p style="font-size: 12px; margin: 10px 0 0 0; opacity: 0.7;">Generated: ${new Date().toLocaleDateString()}</p>
+                <h1 style="font-size: 64px; margin: 0 0 15px 0; color: #FFD700; font-weight: 900;">👑 HALL OF FAME</h1>
+                <p style="font-size: 28px; margin: 0; color: #1a1a1a; font-weight: 600;">DYNAMIC EFOOTBALL COMMUNITY</p>
+                <p style="font-size: 18px; margin: 10px 0 0 0; color: #666;">Legendary Players & Champions</p>
             `;
             container.appendChild(header);
             
-            // Add Hall of Fame content
-            const hallOfFameSection = document.createElement('div');
-            hallOfFameSection.style.cssText = `
-                background: rgba(255,255,255,0.1);
-                border-radius: 15px;
-                padding: 20px;
-                margin-bottom: 20px;
-                backdrop-filter: blur(10px);
-            `;
-            
-            // Get the actual Hall of Fame data
-            const hallOfFameContent = document.getElementById('hallOfFameContent');
-            if (hallOfFameContent) {
-                const playerCards = hallOfFameContent.querySelectorAll('.player-card');
-                if (playerCards.length > 0) {
-                    playerCards.forEach((card, index) => {
-                        if (index < 10) { // Limit to 10 cards for image
-                            const clonedCard = card.cloneNode(true);
-                            clonedCard.style.cssText = `
-                                background: white;
-                                border-radius: 12px;
-                                padding: 15px;
-                                margin-bottom: 15px;
-                                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-                                position: relative;
-                            `;
-                            
-                            // Add gold accent bar
-                            const goldBar = document.createElement('div');
-                            goldBar.style.cssText = `
-                                position: absolute;
-                                top: 0;
-                                left: 0;
-                                right: 0;
-                                height: 3px;
-                                background: linear-gradient(90deg, #FFD700, #FFA500, #FFD700);
-                                border-radius: 12px 12px 0 0;
-                            `;
-                            clonedCard.insertBefore(goldBar, clonedCard.firstChild);
-                            
-                            hallOfFameSection.appendChild(clonedCard);
-                        }
+            // Loop through leagues
+            for (const [leagueName, players] of Object.entries(hallOfFameData)) {
+                // League header with divider
+                const leagueSection = document.createElement('div');
+                leagueSection.style.cssText = `
+                    margin-bottom: 40px;
+                `;
+                
+                // League title
+                const leagueTitle = document.createElement('div');
+                leagueTitle.style.cssText = `
+                    font-size: 42px;
+                    font-weight: 900;
+                    color: #667eea;
+                    margin-bottom: 15px;
+                    padding-bottom: 15px;
+                    border-bottom: 3px solid #667eea;
+                `;
+                leagueTitle.textContent = `🏆 ${leagueName}`;
+                leagueSection.appendChild(leagueTitle);
+                
+                // Loop through all players in league
+                for (const [playerName, playerData] of Object.entries(players)) {
+                    const playerSection = document.createElement('div');
+                    playerSection.style.cssText = `
+                        margin-bottom: 25px;
+                        padding-left: 20px;
+                        border-left: 4px solid #FFD700;
+                    `;
+                    
+                    // Player name (bold) + win count
+                    const playerHeader = document.createElement('div');
+                    playerHeader.style.cssText = `
+                        font-size: 24px;
+                        font-weight: 900;
+                        color: #1a1a1a;
+                        margin-bottom: 12px;
+                    `;
+                    playerHeader.innerHTML = `<strong>${escapeHtml(playerName)}</strong> <span style="color: #FFD700; font-size: 20px;">(${playerData.wins.length}x Winner)</span>`;
+                    playerSection.appendChild(playerHeader);
+                    
+                    // Loop through ALL wins for this player (NO LIMIT)
+                    const winsList = document.createElement('div');
+                    winsList.style.cssText = `
+                        margin-left: 20px;
+                    `;
+                    
+                    playerData.wins.forEach(win => {
+                        const winItem = document.createElement('div');
+                        winItem.style.cssText = `
+                            font-size: 18px;
+                            color: #333;
+                            margin-bottom: 8px;
+                            display: flex;
+                            align-items: center;
+                            gap: 12px;
+                        `;
+                        winItem.innerHTML = `
+                            <span style="color: #FFD700; font-size: 16px;">•</span>
+                            <strong style="color: #1a1a1a;">${escapeHtml(win.team_name)}</strong> 
+                            <span style="color: #666;">– Season ${win.season}</span>
+                        `;
+                        winsList.appendChild(winItem);
                     });
-                } else {
-                    hallOfFameSection.innerHTML = '<p style="color: white; text-align: center;">No Hall of Fame data available</p>';
+                    
+                    playerSection.appendChild(winsList);
+                    leagueSection.appendChild(playerSection);
                 }
+                
+                container.appendChild(leagueSection);
             }
             
-            container.appendChild(hallOfFameSection);
-            
-            // Add footer
+            // Footer
             const footer = document.createElement('div');
             footer.style.cssText = `
                 text-align: center;
-                color: white;
-                font-size: 12px;
-                opacity: 0.8;
-                margin-top: 20px;
+                margin-top: 60px;
+                padding-top: 30px;
+                border-top: 4px solid #FFD700;
+                font-size: 16px;
+                color: #888;
             `;
-            footer.innerHTML = `<p>© 2026 DYNAMIC EFOOTBALL COMMUNITY</p>`;
+            footer.innerHTML = `
+                <p style="margin: 0;">© 2026 DYNAMIC EFOOTBALL COMMUNITY</p>
+                <p style="margin: 8px 0 0 0; font-size: 14px;">Generated: ${new Date().toLocaleDateString()}</p>
+            `;
             container.appendChild(footer);
             
             return container;

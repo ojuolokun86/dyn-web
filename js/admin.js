@@ -1,5 +1,147 @@
-// Modern Admin Dashboard JavaScript
-// API_BASE_URL is now provided by api-config.js
+// Instagram-style Hall of Fame Poster Generator
+async function downloadHallOfFameAsImage() {
+    try {
+        // Fetch Hall of Fame data from API
+        const response = await fetch(`${API_BASE_URL}/admin/hall-of-fame-web`);
+        const result = await response.json();
+        
+        if (!result.success) {
+            alert('Failed to load Hall of Fame data');
+            return;
+        }
+        
+        const leagueData = result.data;
+        
+        // Create hidden container for poster generation
+        const posterContainer = document.createElement('div');
+        posterContainer.id = 'hof-poster-container';
+        posterContainer.style.cssText = `
+            position: fixed;
+            top: -9999px;
+            left: -9999px;
+            width: 1080px;
+            background: #ffffff;
+            padding: 60px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333333;
+            box-sizing: border-box;
+            z-index: -9999;
+        `;
+        
+        // Build poster HTML from raw API data
+        let posterHTML = `
+            <div style="text-align: center; margin-bottom: 60px;">
+                <h1 style="font-size: 48px; font-weight: bold; margin: 0; color: #FFD700; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
+                    👑 HALL OF FAME
+                </h1>
+                <h2 style="font-size: 24px; font-weight: 600; margin: 10px 0; color: #666666;">
+                    DYNAMIC EFOOTBALL COMMUNITY
+                </h2>
+                <p style="font-size: 14px; margin: 0; color: #999999;">
+                    ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                </p>
+            </div>
+        `;
+        
+        // Process each league from API data
+        Object.keys(leagueData).forEach((leagueName, leagueIndex) => {
+            const players = leagueData[leagueName];
+            
+            // League header
+            posterHTML += `
+                <div style="margin-bottom: ${leagueIndex > 0 ? '40px' : '0'};">
+                    <h3 style="font-size: 32px; font-weight: bold; margin: 0 0 15px 0; color: #FFD700;">
+                        ${leagueName.toUpperCase()}
+                    </h3>
+                    <div style="height: 2px; background: linear-gradient(90deg, #FFD700, #FFA500); margin: 0 0 25px 0; border-radius: 1px;"></div>
+            `;
+            
+            // Process each player in this league
+            Object.keys(players).forEach((playerName, playerIndex) => {
+                const player = players[playerName];
+                const wins = player.wins;
+                const winCount = wins.length;
+                
+                // Player section
+                posterHTML += `
+                    <div style="margin-bottom: ${playerIndex > 0 ? '25px' : '0'};">
+                        <div style="font-size: 20px; font-weight: bold; margin: 0 0 5px 0; color: #333333;">
+                            ${playerName}
+                        </div>
+                        <div style="font-size: 16px; font-weight: 600; margin: 0 0 10px 0; color: #666666;">
+                            ${winCount}x Winner
+                        </div>
+                        <div style="font-size: 14px; color: #888888; line-height: 1.6;">
+                `;
+                
+                // List ALL wins for this player
+                wins.forEach((win, winIndex) => {
+                    const isLast = winIndex === wins.length - 1;
+                    posterHTML += `
+                        • ${win.team_name} – Season ${win.season}${isLast ? '' : '<br>'}
+                    `;
+                });
+                
+                posterHTML += `
+                        </div>
+                    </div>
+                `;
+            });
+            
+            posterHTML += `</div>`;
+        });
+        
+        posterContainer.innerHTML = posterHTML;
+        document.body.appendChild(posterContainer);
+        
+        // Load html2canvas if not already loaded
+        if (typeof html2canvas === 'undefined') {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+            script.onload = () => captureAndDownload();
+            document.head.appendChild(script);
+        } else {
+            captureAndDownload();
+        }
+        
+        async function captureAndDownload() {
+            try {
+                // Capture the poster with auto height
+                const canvas = await html2canvas(posterContainer, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: "#ffffff",
+                    width: 1080,
+                    height: posterContainer.scrollHeight
+                });
+                
+                // Convert to blob and download
+                canvas.toBlob((blob) => {
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `hall-of-fame-instagram-${new Date().toISOString().split('T')[0]}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    
+                    // Clean up the temporary container
+                    document.body.removeChild(posterContainer);
+                }, 'image/png');
+                
+            } catch (error) {
+                console.error('Error generating poster:', error);
+                alert('Failed to generate Hall of Fame poster');
+                document.body.removeChild(posterContainer);
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error in downloadHallOfFameAsImage:', error);
+        alert('Failed to generate Hall of Fame poster');
+    }
+}
 
 // Dashboard State
 let dashboardState = {
@@ -64,6 +206,7 @@ function setupEventListeners() {
     document.getElementById('deleteSelectedEventBtn')?.addEventListener('click', handleDeleteSelectedEventFromVotes);
     document.getElementById('pointTableForm')?.addEventListener('submit', handleCreatePointTable);
     document.getElementById('awardPointsFormElement')?.addEventListener('submit', handleAwardPoints);
+    document.getElementById('pastWinnerForm')?.addEventListener('submit', handleAddPastWinner);
     document.getElementById('awardPointEventSelect')?.addEventListener('change', async () => {
         // Ensure point-tables load first, then contenders — prevents race conditions
         await loadPointTablesForAward();
@@ -409,6 +552,7 @@ function renderContenderItem(contender, canEdit) {
             ${canEdit ? `
                 <div class="item-actions">
                     <button class="btn btn-small btn-secondary" onclick="editContender('${contender.id}')">Edit</button>
+                    <button class="btn btn-small btn-info" onclick="resendContenderEmail('${contender.id}')" title="Resend Email to Contender">📧</button>
                     <button class="btn btn-small btn-danger" onclick="deleteContender('${contender.id}')">Delete</button>
                 </div>
             ` : `
@@ -806,21 +950,33 @@ function escapeHtml(text) {
 
 async function loadEvents() {
     const token = localStorage.getItem('adminToken');
+    console.log('🔧 DEBUG: Frontend loadEvents started');
+    console.log('🔧 DEBUG: Token exists:', !!token);
+    
     try {
+        console.log('🔧 DEBUG: Fetching events from:', `${API_BASE_URL}/events`);
         const response = await fetch(`${API_BASE_URL}/events`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
         });
+        
+        console.log('🔧 DEBUG: Events response status:', response.status);
         const result = await response.json();
+        
+        console.log('🔧 DEBUG: Events response data:', result);
 
         if (result.success) {
             const events = result.data;
+            console.log('🔧 DEBUG: Events array:', events);
             
             // Display current/most recent event
             if (events.length > 0) {
                 const currentEvent = events.find(e => e.status === 'open') || events[0];
+                console.log('🔧 DEBUG: Selected current event:', currentEvent);
                 displayCurrentEvent(currentEvent);
+            } else {
+                console.log('🔧 DEBUG: No events found');
             }
 
             // Display all events list
@@ -828,9 +984,11 @@ async function loadEvents() {
             
             // Populate event select dropdowns
             populateEventSelects();
+        } else {
+            console.error('🔧 DEBUG: Events API returned error:', result);
         }
     } catch (error) {
-        console.error('Error loading events:', error);
+        console.error('🔧 DEBUG: Frontend loadEvents error:', error);
     }
 }
 
@@ -925,10 +1083,21 @@ window.rejectRequest = async function(requestId) {
 }
 
 function displayCurrentEvent(event) {
+    console.log('🔧 DEBUG: displayCurrentEvent called with:', event);
+    
     const card = document.getElementById('currentEventCard');
     const actions = document.getElementById('eventActionButtons');
     
-    card.classList.remove('hidden');
+    console.log('🔧 DEBUG: Found elements:', { card: !!card, actions: !!actions });
+    console.log('🔧 DEBUG: Card classes before:', card ? card.className : 'not found');
+    
+    // Force remove hidden class and make sure card is visible
+    if (card) {
+        card.classList.remove('hidden');
+        card.style.display = 'block';
+        console.log('🔧 DEBUG: Card classes after:', card.className);
+        console.log('🔧 DEBUG: Card display style:', card.style.display);
+    }
     
     document.getElementById('currentEventName').textContent = event.name;
     document.getElementById('currentEventDescription').textContent = event.description || 'No description';
@@ -937,34 +1106,89 @@ function displayCurrentEvent(event) {
                        event.status === 'open' ? '🎪 Event Open' :
                        event.status === 'closed' ? '🔒 Closed' : '📝 Draft';
     
+    console.log('🔧 DEBUG: Event status:', event.status, 'Status text:', statusText);
+    
     document.getElementById('currentEventStatus').textContent = statusText;
     document.getElementById('currentEventStatus').className = `event-status-badge ${event.status}`;
     
     // Generate action buttons based on status
-    actions.innerHTML = '';
-    
-    if (event.status === 'draft') {
-        actions.innerHTML += `
-            <button class="btn btn-success" onclick="openEvent('${event.id}')">
-                ✨ Open for Voting
-            </button>
-            <button class="btn btn-danger" onclick="deleteEvent('${event.id}')">
-                🗑️ Delete
-            </button>
-        `;
-    } else if (event.status === 'open') {
-        actions.innerHTML += `
-            <button class="btn btn-warning" onclick="closeEvent('${event.id}')">
-                🔒 Close Event
-            </button>
-        `;
-    } else if (event.status === 'closed') {
-        actions.innerHTML += `
-            <button class="btn btn-primary" onclick="showWinnerSelect('${event.id}')">
-                🎯 Announce Winner
-            </button>
-        `;
+    if (actions) {
+        actions.innerHTML = '';
+        console.log('🔧 DEBUG: Generating buttons for status:', event.status);
+        
+        if (event.status === 'draft') {
+            console.log('🔧 DEBUG: Adding draft status buttons');
+            actions.innerHTML = `
+                <button class="btn btn-success" onclick="openEvent('${event.id}')">
+                    ✨ Open for Voting
+                </button>
+                <button class="btn btn-danger" onclick="deleteEvent('${event.id}')">
+                    🗑️ Delete
+                </button>
+            `;
+        } else if (event.status === 'open') {
+            console.log('🔧 DEBUG: Adding open status buttons');
+            actions.innerHTML = `
+                <button class="btn btn-warning" onclick="closeEvent('${event.id}')">
+                    🔒 Close Event
+                </button>
+            `;
+        } else if (event.status === 'closed') {
+            console.log('🔧 DEBUG: Adding closed status buttons');
+            actions.innerHTML = `
+                <button class="btn btn-primary" onclick="showWinnerSelect('${event.id}')">
+                    🎯 Announce Winner
+                </button>
+            `;
+        } else if (event.status === 'winner_announced') {
+            console.log('🔧 DEBUG: Adding winner_announced status buttons');
+            actions.innerHTML = `
+                <button class="btn btn-info" onclick="window.location.href='results.html'">
+                    📊 View Results
+                </button>
+                <button class="btn btn-warning" onclick="reopenEvent('${event.id}')">
+                    🔄 Reopen Event
+                </button>
+                <button class="btn btn-danger" onclick="deleteEvent('${event.id}')">
+                    🗑️ Delete
+                </button>
+            `;
+        }
+        
+        console.log('🔧 DEBUG: Final actions HTML:', actions.innerHTML);
+        console.log('🔧 DEBUG: Actions container classes:', actions.className);
+        console.log('🔧 DEBUG: Actions container style:', actions.style.cssText);
+    } else {
+        console.error('🔧 DEBUG: Actions container not found!');
     }
+    
+    // Add a temporary visual indicator for debugging
+    setTimeout(() => {
+        const visibleCard = document.getElementById('currentEventCard');
+        if (visibleCard && visibleCard.offsetParent === null) {
+            console.error('🔧 DEBUG: Event card is still hidden! Applying emergency fix...');
+            // Force it to be visible with multiple approaches
+            visibleCard.style.display = 'block';
+            visibleCard.style.visibility = 'visible';
+            visibleCard.style.opacity = '1';
+            visibleCard.style.position = 'static';
+            visibleCard.style.width = 'auto';
+            visibleCard.style.height = 'auto';
+            visibleCard.classList.remove('hidden');
+            visibleCard.classList.add('visible');
+            
+            // Also check if parent is hidden
+            let parent = visibleCard.parentElement;
+            while (parent && parent.offsetParent === null) {
+                console.log('🔧 DEBUG: Parent element also hidden:', parent);
+                parent.style.display = 'block';
+                parent.style.visibility = 'visible';
+                parent = parent.parentElement;
+            }
+        } else {
+            console.log('🔧 DEBUG: Event card is visible!');
+        }
+    }, 100);
 }
 
 function displayEventsList(events) {
@@ -2349,6 +2573,28 @@ function logout() {
     }
 }
 
+// Past Winner Image Preview Functions
+function previewPastWinnerImage(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('pastWinnerImagePreview');
+            const img = preview.querySelector('img');
+            img.src = e.target.result;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function removePastWinnerImage() {
+    const input = document.getElementById('pastWinnerPicture');
+    const preview = document.getElementById('pastWinnerImagePreview');
+    input.value = '';
+    preview.style.display = 'none';
+    preview.querySelector('img').src = '';
+}
+
 // ===== PAST WINNERS MANAGEMENT =====
 async function loadPastWinnersList() {
     const listDiv = document.getElementById('pastWinnersList');
@@ -2391,22 +2637,54 @@ async function loadPastWinnersList() {
 async function handleAddPastWinner(e) {
     e.preventDefault();
     const token = localStorage.getItem('adminToken');
-
-    const winnerData = {
-        name: document.getElementById('pastWinnerName').value,
-        event_name: document.getElementById('pastWinnerEvent').value,
-        class: document.getElementById('pastWinnerClass').value,
-        country: document.getElementById('pastWinnerCountry').value,
-        points: parseFloat(document.getElementById('pastWinnerPoints').value) || 0,
-        date: document.getElementById('pastWinnerDate').value,
-        picture: document.getElementById('pastWinnerPicture').value,
-        video: document.getElementById('pastWinnerVideo').value
-    };
-
     const msgDiv = document.getElementById('pastWinnerMessage');
-
+    const saveBtn = e.target.querySelector('button[type="submit"]');
+    
     try {
-        const res = await fetch(`${API_BASE_URL}/admin/past-winners`, {
+        // Disable button and show loading
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Adding...';
+        
+        // Get form data
+        const formData = new FormData(e.target);
+        const pictureFile = document.getElementById('pastWinnerPicture').files[0];
+        
+        let pictureUrl = '';
+        
+        // Upload picture if provided
+        if (pictureFile) {
+            const uploadFormData = new FormData();
+            uploadFormData.append('image', pictureFile);
+            
+            const uploadResponse = await fetch(`${API_BASE_URL}/admin/past-winners/upload`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: uploadFormData
+            });
+            
+            const uploadResult = await uploadResponse.json();
+            if (!uploadResult.success) {
+                throw new Error(uploadResult.error || 'Failed to upload picture');
+            }
+            pictureUrl = uploadResult.url;
+        }
+        
+        // Prepare winner data
+        const winnerData = {
+            name: formData.get('name'),
+            event_name: formData.get('event_name'),
+            class: formData.get('class'),
+            country: formData.get('country'),
+            points: parseFloat(formData.get('points')) || 0,
+            date: formData.get('date'),
+            picture: pictureUrl,
+            video: formData.get('video')
+        };
+
+        // Add past winner
+        const response = await fetch(`${API_BASE_URL}/admin/past-winners`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -2414,12 +2692,17 @@ async function handleAddPastWinner(e) {
             },
             body: JSON.stringify(winnerData)
         });
-
-        const result = await res.json();
+        
+        const result = await response.json();
 
         if (result.success) {
             msgDiv.innerHTML = '<div class="message success">✅ Past winner added successfully!</div>';
             document.getElementById('pastWinnerForm').reset();
+            
+            // Clear image preview
+            document.getElementById('pastWinnerImagePreview').style.display = 'none';
+            document.getElementById('pastWinnerImagePreview').querySelector('img').src = '';
+            
             setTimeout(() => {
                 toggleForm('add-past-winner-form');
                 loadPastWinnersList();
@@ -2429,6 +2712,10 @@ async function handleAddPastWinner(e) {
         }
     } catch (err) {
         msgDiv.innerHTML = `<div class="message error">❌ Error: ${err.message}</div>`;
+    } finally {
+        // Re-enable button
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Add Past Winner';
     }
 }
 
@@ -2489,7 +2776,7 @@ async function loadHallOfFameList() {
                                     ${winCount}x Winner
                                 </span>
                             </div>
-                            <button onclick="editHallOfFameEntry('${escapeHtml(playerName)}', '${escapeHtml(leagueName)}')" class="btn btn-small btn-secondary">Edit</button>
+                            <button onclick="openEditHallOfFameModal('${playerData.wins[0]?.id || ''}', '${escapeHtml(playerName)}', '${escapeHtml(leagueName)}', '${escapeHtml(playerData.player_image || '')}', '${escapeHtml(playerData.wins[0]?.team_name || '')}', '${playerData.wins[0]?.season || ''}', '${escapeHtml(playerData.wins[0]?.team_logo || '')}')" class="btn btn-small btn-primary">✏️ Edit Player</button>
                         </div>
                         
                         <div style="display: flex; flex-wrap: wrap; gap: 10px;">
@@ -2504,6 +2791,8 @@ async function loadHallOfFameList() {
                                         <div style="font-size: 11px; color: #666;">Season ${win.season}</div>
                                     </div>
                                     <button onclick="deleteHallOfFameEntry('${win.id}')" style="background: #ff4444; color: white; border: none; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 12px; margin-left: 5px;">×</button>
+                                    <button onclick="openEditHallOfFameModal('${win.id}', '${escapeHtml(playerName)}', '${escapeHtml(leagueName)}', '${escapeHtml(playerData.player_image || '')}', '${escapeHtml(win.team_name)}', '${win.season}', '${escapeHtml(win.team_logo || '')}')" style="background: #667eea; color: white; border: none; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 12px; margin-left: 5px;">✏️</button>
+                                    <button onclick="resendHallOfFameEmail('${win.id}')" style="background: #28a745; color: white; border: none; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 12px; margin-left: 5px;" title="Resend Hall of Fame Email">📧</button>
                                 </div>
                             `).join('')}
                         </div>
@@ -2723,6 +3012,386 @@ function setupMobileSidebar() {
                 sidebarToggle.textContent = '☰';
             });
         });
+    }
+}
+
+// Hall of Fame Edit Functions
+async function openEditHallOfFameModal(hofId, playerName, league, playerImage, entryId, team, season, teamLogo) {
+    const modal = document.getElementById('editHallOfFameModal');
+    
+    // If we have a hofId, fetch the complete entry data
+    if (hofId) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/admin/hall-of-fame-web/${hofId}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    const entry = result.data;
+                    
+                    // Set current values from fetched data
+                    document.getElementById('editHofId').value = entry.id || '';
+                    document.getElementById('editHofPlayerName').value = entry.player_name || '';
+                    document.getElementById('editHofLeague').value = entry.league || '';
+                    document.getElementById('editHofTeam').value = entry.team_name || '';
+                    document.getElementById('editHofSeason').value = entry.season || '';
+                    document.getElementById('editHofEmail').value = entry.email || '';
+                    document.getElementById('editHofPhone').value = entry.phone || '';
+                    
+                    // Show image previews if URLs exist
+                    if (entry.player_image) {
+                        const playerPreview = document.getElementById('editPlayerImagePreview');
+                        if (playerPreview) {
+                            playerPreview.querySelector('img').src = entry.player_image;
+                            playerPreview.style.display = 'block';
+                        }
+                    }
+                    
+                    if (entry.team_logo) {
+                        const teamPreview = document.getElementById('editTeamLogoPreview');
+                        if (teamPreview) {
+                            teamPreview.querySelector('img').src = entry.team_logo;
+                            teamPreview.style.display = 'block';
+                        }
+                    }
+                } else {
+                    console.error('No data in API response');
+                }
+            } else {
+                const errorText = await response.text();
+                console.error('API Error Response:', errorText);
+            }
+        } catch (error) {
+            console.error('Error fetching Hall of Fame entry:', error);
+        }
+    } else {
+        setFallbackValues();
+    }
+    
+    function setFallbackValues() {
+        // Set current values from parameters
+        document.getElementById('editHofId').value = entryId || hofId || '';
+        document.getElementById('editHofPlayerName').value = playerName || '';
+        document.getElementById('editHofLeague').value = league || '';
+        document.getElementById('editHofTeam').value = team || '';
+        document.getElementById('editHofSeason').value = season || '';
+        document.getElementById('editHofEmail').value = '';
+        document.getElementById('editHofPhone').value = '';
+        
+        // Clear file inputs to prevent caching
+        document.getElementById('editHofPlayerImage').value = '';
+        document.getElementById('editHofTeamLogo').value = '';
+        
+        // Hide image previews
+        document.getElementById('editPlayerImagePreview').style.display = 'none';
+        document.getElementById('editTeamLogoPreview').style.display = 'none';
+    }
+    
+    // Clear any previous messages
+    document.getElementById('editHallOfFameMessage').innerHTML = '';
+    
+    // Show modal
+    modal.style.display = 'block';
+    
+    // Only clear form if we're using fallback values (no API call)
+    if (!hofId) {
+        setTimeout(() => {
+            const editHofForm = document.getElementById('editHallOfFameForm');
+            if (editHofForm) {
+                editHofForm.reset();
+                
+                // Clear file inputs explicitly
+                document.getElementById('editHofPlayerImage').value = '';
+                document.getElementById('editHofTeamLogo').value = '';
+                
+                // Hide image previews
+                document.getElementById('editPlayerImagePreview').style.display = 'none';
+                document.getElementById('editTeamLogoPreview').style.display = 'none';
+            }
+        }, 100);
+    }
+}
+
+function closeEditHallOfFameModal() {
+    const modal = document.getElementById('editHallOfFameModal');
+    modal.style.display = 'none';
+}
+
+// Handle edit form submission
+document.addEventListener('DOMContentLoaded', function() {
+    // ... existing code ...
+    
+    // Add file upload handlers for Hall of Fame edit
+    const editPlayerImageInput = document.getElementById('editHofPlayerImage');
+    const editTeamLogoInput = document.getElementById('editHofTeamLogo');
+    const editPlayerImagePreview = document.getElementById('editPlayerImagePreview');
+    const editTeamLogoPreview = document.getElementById('editTeamLogoPreview');
+    
+    // Handle player image upload
+    if (editPlayerImageInput) {
+        editPlayerImageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    editPlayerImagePreview.querySelector('img').src = e.target.result;
+                    editPlayerImagePreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // Add drag and drop
+        setupDragAndDrop(editPlayerImageInput, editPlayerImagePreview);
+    }
+    
+    // Handle team logo upload
+    if (editTeamLogoInput) {
+        editTeamLogoInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    editTeamLogoPreview.querySelector('img').src = e.target.result;
+                    editTeamLogoPreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // Add drag and drop
+        setupDragAndDrop(editTeamLogoInput, editTeamLogoPreview);
+    }
+    
+    // Add Hall of Fame edit form handler
+    const editHofForm = document.getElementById('editHallOfFameForm');
+    if (editHofForm) {
+        editHofForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(editHofForm);
+            const data = {
+                hofId: formData.get('hofId'),
+                playerName: formData.get('editHofPlayerName'),
+                league: formData.get('editHofLeague'),
+                team: formData.get('editHofTeam'),
+                season: formData.get('editHofSeason'),
+                email: formData.get('editHofEmail'),
+                phone: formData.get('editHofPhone')
+            };
+            
+            // Handle file uploads
+            const playerImageFile = editPlayerImageInput.files[0];
+            const teamLogoFile = editTeamLogoInput.files[0];
+            
+            if (playerImageFile) {
+                data.playerImageFile = playerImageFile;
+            }
+            if (teamLogoFile) {
+                data.teamLogoFile = teamLogoFile;
+            }
+            
+            try {
+                // Show loading state
+                const saveBtn = editHofForm.querySelector('.btn-primary');
+                const originalText = saveBtn.textContent;
+                saveBtn.textContent = 'Updating...';
+                saveBtn.disabled = true;
+                
+                // Create FormData for file upload
+                const uploadFormData = new FormData();
+                Object.keys(data).forEach(key => {
+                    uploadFormData.append(key, data[key]);
+                });
+                
+                // Call API to update Hall of Fame
+                const response = await fetch(`${API_BASE_URL}/admin/hall-of-fame-web/${formData.get('hofId')}`, {
+                    method: 'PUT',
+                    body: uploadFormData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('editHallOfFameMessage').innerHTML = 
+                        '<div class="success-message">✅ Hall of Fame entry updated successfully!</div>';
+                    
+                    setTimeout(() => {
+                        closeEditHallOfFameModal();
+                        loadHallOfFameList(); // Reload the list
+                    }, 1500);
+                } else {
+                    document.getElementById('editHallOfFameMessage').innerHTML = 
+                        `<div class="error-message">❌ Error updating entry: ${result.message || 'Unknown error'}</div>`;
+                }
+                
+            } catch (error) {
+                console.error('Error updating Hall of Fame:', error);
+                document.getElementById('editHallOfFameMessage').innerHTML = 
+                    '<div class="error-message">❌ Error updating entry. Please try again.</div>';
+            } finally {
+                // Reset button state
+                const saveBtn = editHofForm.querySelector('.btn-primary');
+                saveBtn.textContent = 'Update Entry';
+                saveBtn.disabled = false;
+            }
+        });
+    }
+    
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        const modal = document.getElementById('editHallOfFameModal');
+        if (event.target === modal) {
+            closeEditHallOfFameModal();
+        }
+    }
+});
+
+// Drag and drop functionality
+function setupDragAndDrop(input, preview) {
+    const dropZone = input.parentElement;
+    
+    // Prevent default drag behaviors
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    // Highlight drop zone when item is dragged over it
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, highlight, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, unhighlight, false);
+    });
+    
+    // Handle dropped files
+    dropZone.addEventListener('drop', function(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        if (files.length > 0) {
+            const file = files[0];
+            if (file.type.startsWith('image/')) {
+                input.files = files;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.querySelector('img').src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+    }, false);
+}
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+function highlight(e) {
+    e.target.parentElement.classList.add('drag-over');
+}
+
+function unhighlight(e) {
+    e.target.parentElement.classList.remove('drag-over');
+}
+
+// Resend Contender Email
+async function resendContenderEmail(contenderId) {
+    console.log('🔧 DEBUG: resendContenderEmail called with ID:', contenderId);
+    
+    if (!confirm('Are you sure you want to resend an email to this contender?')) return;
+    
+    const token = localStorage.getItem('adminToken');
+    
+    try {
+        // Show loading state
+        const originalText = event.target.textContent;
+        event.target.textContent = '...';
+        event.target.disabled = true;
+        
+        const apiUrl = `${API_BASE_URL}/admin/contenders/${contenderId}/resend-email`;
+        console.log('🔧 DEBUG: Calling API URL:', apiUrl);
+        console.log('🔧 DEBUG: API_BASE_URL:', API_BASE_URL);
+        
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        console.log('🔧 DEBUG: Response status:', response.status);
+        console.log('🔧 DEBUG: Response ok:', response.ok);
+        
+        const result = await response.json();
+        console.log('🔧 DEBUG: Response data:', result);
+        
+        if (result.success) {
+            alert('✅ Email sent to contender successfully!');
+            console.log('Email sent:', result.data);
+        } else {
+            alert('❌ Error sending email: ' + (result.error || result.message || 'Unknown error'));
+            console.error('Email send error:', result);
+        }
+        
+    } catch (error) {
+        console.error('Error resending contender email:', error);
+        alert('❌ Error sending email. Please try again.');
+    } finally {
+        // Reset button state
+        event.target.textContent = '📧';
+        event.target.disabled = false;
+    }
+}
+
+// Resend Hall of Fame Email
+async function resendHallOfFameEmail(entryId) {
+    if (!confirm('Are you sure you want to resend the Hall of Fame notification email for this entry?')) return;
+    
+    const token = localStorage.getItem('adminToken');
+    
+    try {
+        // Show loading state
+        const originalText = event.target.textContent;
+        event.target.textContent = '...';
+        event.target.disabled = true;
+        
+        const response = await fetch(`${API_BASE_URL}/admin/hall-of-fame/${entryId}/resend-email`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('✅ Hall of Fame email sent successfully!');
+            console.log('Email sent:', result.data);
+        } else {
+            alert('❌ Error sending email: ' + (result.error || result.message || 'Unknown error'));
+            console.error('Email send error:', result);
+        }
+        
+    } catch (error) {
+        console.error('Error resending Hall of Fame email:', error);
+        alert('❌ Error sending email. Please try again.');
+    } finally {
+        // Reset button state
+        event.target.textContent = '📧';
+        event.target.disabled = false;
     }
 }
 
