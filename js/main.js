@@ -53,8 +53,8 @@ async function loadEvent() {
         const result = await response.json();
 
         if (!result.success || !result.data) {
-            // No active event - check for past winner
-            await loadPastWinner();
+            // No active event - check for past winner AND upcoming events
+            await loadPastWinnerWithUpcomingEvents();
             return;
         }
 
@@ -106,16 +106,27 @@ async function loadEvent() {
             return;
         }
 
-        // Draft status — update header
+        // Draft status — update header and show with upcoming events
         const siteTitle = document.getElementById('siteTitle');
-        if (siteTitle) siteTitle.textContent = `🏆 ${event.name}`;
-        document.title = event.name;
+        if (siteTitle) siteTitle.textContent = `🏆 DYNAMIC EFOOTBALL COMMUNITY`;
+        document.title = 'DYNAMIC EFOOTBALL COMMUNITY';
+        
+        // Show upcoming events section
         heroContent.innerHTML = `
-            <div class="event-draft-message">
-                <h2>📋 Event Coming Soon</h2>
-                <p>${event.name}</p>
+            <div class="home-content-wrapper">
+                <div class="upcoming-events-section">
+                    <h2>📋 Upcoming Event</h2>
+                    <div class="upcoming-event-card">
+                        <h3>${event.name}</h3>
+                        ${event.description ? `<p>${event.description}</p>` : ''}
+                        <p class="event-status">Coming Soon...</p>
+                    </div>
+                </div>
             </div>
         `;
+        
+        // Load past winners section
+        await loadPastWinnerSection();
 
     } catch (error) {
         console.error('Error loading event:', error);
@@ -205,6 +216,215 @@ async function loadPastWinner() {
     } catch (error) {
         console.error('Error loading past winner:', error);
         // Fallback to default message
+        const siteTitle = document.getElementById('siteTitle');
+        if (siteTitle) siteTitle.textContent = 'DYNAMIC EFOOTBALL COMMUNITY';
+        document.title = 'DYNAMIC EFOOTBALL COMMUNITY';
+        heroContent.innerHTML = `
+            <div class="event-closed-message">
+                <h2>🎪 No Event Currently Active</h2>
+                <p>Please check back later for our next event.</p>
+                <p class="secondary-text">Thank you for your interest in DYNAMIC EFOOTBALL COMMUNITY!</p>
+            </div>
+        `;
+    }
+}
+
+// Load past winner section (used after showing upcoming events)
+async function loadPastWinnerSection() {
+    try {
+        console.log('Loading past winner section...');
+        // Fetch past events with winners
+        const response = await fetch(`${API_BASE_URL}/events/past-winners`);
+        const result = await response.json();
+        console.log('Past winners result:', result);
+        
+        if (result.success && result.data && result.data.length > 0) {
+            const pastWinner = result.data[0]; // Get most recent winner
+            
+            // Check if winner is within 3 months
+            const winnerDate = new Date(pastWinner.ended_at || pastWinner.updated_at);
+            const threeMonthsAgo = new Date();
+            threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+            
+            if (winnerDate > threeMonthsAgo) {
+                // Get the wrapper and append divider + past winner
+                const wrapper = document.querySelector('.home-content-wrapper') || heroContent;
+                
+                // Create divider and past winner HTML
+                const divider = document.createElement('div');
+                divider.className = 'section-divider';
+                
+                const pastWinnerDiv = document.createElement('div');
+                pastWinnerDiv.className = 'past-winner-display';
+                pastWinnerDiv.innerHTML = `
+                    <div class="past-winner-header">
+                        <h2>🏆 Previous Winner</h2>
+                        <p style="opacity: 0.8; margin-bottom: 20px;">${pastWinner.event_name}</p>
+                    </div>
+                    <div class="past-winner-content">
+                        <div class="past-winner-info">
+                            ${pastWinner.winner_picture ? `<div class="past-winner-image-bg" style="background-image: url('${escapeHtml(pastWinner.winner_picture)}')"></div>` : ''}
+                            <div class="past-winner-content-overlay">
+                                <div class="past-winner-name">${escapeHtml(pastWinner.winner_name)}</div>
+                                <div class="past-winner-meta">
+                                    <span class="past-winner-class">${escapeHtml(pastWinner.winner_class || 'N/A')}</span>
+                                    <span class="past-winner-country">${escapeHtml(pastWinner.winner_country || 'N/A')}</span>
+                                </div>
+                                <div class="past-winner-points">${pastWinner.winner_points || 0} Points</div>
+                            </div>
+                        </div>
+                        ${pastWinner.winner_video ? `
+                            <div class="past-winner-video">
+                                <video controls autoplay muted loop style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 15px;">
+                                    <source src="${pastWinner.winner_video}" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="past-winner-footer">
+                        <p style="opacity: 0.7; font-size: 14px;">Winner announced ${new Date(winnerDate).toLocaleDateString()}</p>
+                        <a href="results.html" class="view-results-btn">View Full Results →</a>
+                    </div>
+                `;
+                
+                // Append to wrapper
+                if (wrapper) {
+                    wrapper.appendChild(divider);
+                    wrapper.appendChild(pastWinnerDiv);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error loading past winner section:', error);
+    }
+}
+
+// Load past winner and upcoming events when no active event
+async function loadPastWinnerWithUpcomingEvents() {
+    try {
+        const siteTitle = document.getElementById('siteTitle');
+        document.title = 'DYNAMIC EFOOTBALL COMMUNITY';
+        
+        // Try to fetch draft events from admin endpoint (only works if admin is logged in)
+        let upcomingEvents = [];
+        const token = localStorage.getItem('adminToken');
+        if (token) {
+            try {
+                const allEventsResponse = await fetch(`${API_BASE_URL}/events`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (allEventsResponse.ok) {
+                    const allEventsResult = await allEventsResponse.json();
+                    if (allEventsResult.success && allEventsResult.data) {
+                        upcomingEvents = allEventsResult.data.filter(e => e.status === 'draft');
+                    }
+                }
+            } catch (error) {
+                console.log('Could not fetch draft events. Skipping upcoming events section.');
+            }
+        }
+        
+        // Try to fetch past winners
+        const winnerResponse = await fetch(`${API_BASE_URL}/events/past-winners`);
+        const winnerResult = await winnerResponse.json();
+        
+        let hasPastWinner = false;
+        let pastWinnerHtml = '';
+        
+        if (winnerResult.success && winnerResult.data && winnerResult.data.length > 0) {
+            const pastWinner = winnerResult.data[0];
+            const winnerDate = new Date(pastWinner.ended_at || pastWinner.updated_at);
+            const threeMonthsAgo = new Date();
+            threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+            
+            if (winnerDate > threeMonthsAgo) {
+                hasPastWinner = true;
+                pastWinnerHtml = `
+                    <div class="past-winner-display">
+                        <div class="past-winner-header">
+                            <h2>🏆 Last Winner</h2>
+                            <p style="opacity: 0.8; margin-bottom: 20px;">${pastWinner.event_name}</p>
+                        </div>
+                        <div class="past-winner-content">
+                            <div class="past-winner-info">
+                                ${pastWinner.winner_picture ? `<div class="past-winner-image-bg" style="background-image: url('${escapeHtml(pastWinner.winner_picture)}')"></div>` : ''}
+                                <div class="past-winner-content-overlay">
+                                    <div class="past-winner-name">${escapeHtml(pastWinner.winner_name)}</div>
+                                    <div class="past-winner-meta">
+                                        <span class="past-winner-class">${escapeHtml(pastWinner.winner_class || 'N/A')}</span>
+                                        <span class="past-winner-country">${escapeHtml(pastWinner.winner_country || 'N/A')}</span>
+                                    </div>
+                                    <div class="past-winner-points">${pastWinner.winner_points || 0} Points</div>
+                                </div>
+                            </div>
+                            ${pastWinner.winner_video ? `
+                                <div class="past-winner-video">
+                                    <video controls autoplay muted loop style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 15px;">
+                                        <source src="${pastWinner.winner_video}" type="video/mp4">
+                                        Your browser does not support the video tag.
+                                    </video>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="past-winner-footer">
+                            <p style="opacity: 0.7; font-size: 14px;">Winner announced ${new Date(winnerDate).toLocaleDateString()}</p>
+                            <a href="results.html" class="view-results-btn">View Full Results →</a>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        // Build upcoming events HTML
+        let upcomingHtml = '';
+        if (upcomingEvents.length > 0) {
+            upcomingHtml = `
+                <div class="upcoming-events-section">
+                    <h2>📋 Upcoming Events</h2>
+                    <div class="upcoming-events-list">
+                        ${upcomingEvents.map(event => `
+                            <div class="upcoming-event-card">
+                                <h3>${event.name}</h3>
+                                ${event.description ? `<p>${event.description}</p>` : ''}
+                                <p class="event-status">Coming Soon...</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Determine what to show
+        if (hasPastWinner || upcomingEvents.length > 0) {
+            if (siteTitle) siteTitle.textContent = '🏆 DYNAMIC EFOOTBALL COMMUNITY';
+            
+            heroContent.innerHTML = `
+                <div class="home-content-wrapper">
+                    ${upcomingHtml}
+                    ${hasPastWinner ? `
+                        ${upcomingEvents.length > 0 ? '<div class="section-divider"></div>' : ''}
+                        ${pastWinnerHtml}
+                    ` : ''}
+                </div>
+            `;
+        } else {
+            // No past winners and no upcoming events
+            if (siteTitle) siteTitle.textContent = 'DYNAMIC EFOOTBALL COMMUNITY';
+            heroContent.innerHTML = `
+                <div class="event-closed-message">
+                    <h2>🎪 No Event Currently Active</h2>
+                    <p>Please check back later for our next event.</p>
+                    <p class="secondary-text">Thank you for your interest in DYNAMIC EFOOTBALL COMMUNITY!</p>
+                </div>
+            `;
+        }
+        
+    } catch (error) {
+        console.error('Error loading past winner and events:', error);
         const siteTitle = document.getElementById('siteTitle');
         if (siteTitle) siteTitle.textContent = 'DYNAMIC EFOOTBALL COMMUNITY';
         document.title = 'DYNAMIC EFOOTBALL COMMUNITY';

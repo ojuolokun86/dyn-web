@@ -346,3 +346,73 @@ footer {
 .message.error { color: #f66; }
 
 .hidden { display:none; }
+
+/* Upcoming Events Section */
+.home-content-wrapper {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.upcoming-events-section {
+    margin-bottom: 40px;
+    padding: 30px 20px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 215, 0, 0.1);
+}
+
+.upcoming-events-section h2,
+.upcoming-event-section h2 {
+    color: gold;
+    font-size: 2em;
+    margin: 0 0 20px 0;
+    text-align: center;
+}
+
+.upcoming-events-list,
+.upcoming-event-content {
+    display: grid;
+    gap: 15px;
+}
+
+.upcoming-event-card {
+    background: rgba(102, 126, 234, 0.15);
+    border: 2px solid rgba(102, 126, 234, 0.3);
+    border-radius: 8px;
+    padding: 20px;
+    transition: all 0.3s ease;
+}
+
+.upcoming-event-card:hover {
+    background: rgba(102, 126, 234, 0.25);
+    border-color: rgba(102, 126, 234, 0.6);
+    transform: translateY(-2px);
+}
+
+.upcoming-event-card h3 {
+    color: #fff;
+    margin: 0 0 10px 0;
+    font-size: 1.5em;
+}
+
+.upcoming-event-card p {
+    color: #ddd;
+    margin: 8px 0;
+    line-height: 1.6;
+}
+
+.upcoming-event-card .event-status {
+    color: gold;
+    font-weight: bold;
+    font-style: italic;
+    margin-top: 12px;
+    font-size: 0.95em;
+}
+
+.section-divider,
+.past-winner-section-divider {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.3), transparent);
+    margin: 40px 0;
+    border: none;
+}

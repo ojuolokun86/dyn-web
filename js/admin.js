@@ -1199,26 +1199,50 @@ function displayEventsList(events) {
         return;
     }
     
-    list.innerHTML = events.map(event => `
-        <div class="event-item">
-            <div class="event-item-info">
-                <h4>${event.name}</h4>
-                <p>${event.description}</p>
-                <span class="event-status-badge ${event.status}">
-                    ${event.status === 'winner_announced' ? '🎉 Winner Announced' :
-                      event.status === 'open' ? '🎪 Open' :
-                      event.status === 'closed' ? '🔒 Closed' : '📝 Draft'}
-                </span>
+    list.innerHTML = events.map(event => {
+        let actionButtons = '';
+        
+        // Generate buttons based on event status
+        if (event.status === 'draft') {
+            actionButtons = `
+                <button class="btn btn-success" onclick="openEvent('${event.id}')">✨ Open Event</button>
+                <button class="btn btn-danger" onclick="deleteEvent('${event.id}')">🗑️ Delete</button>
+            `;
+        } else if (event.status === 'open') {
+            actionButtons = `
+                <button class="btn btn-warning" onclick="closeEvent('${event.id}')">🔒 Close Event</button>
+            `;
+        } else if (event.status === 'closed') {
+            actionButtons = `
+                <button class="btn btn-primary" onclick="showWinnerSelect('${event.id}')">🎯 Announce Winner</button>
+            `;
+        } else if (event.status === 'winner_announced') {
+            actionButtons = `
+                <button class="btn btn-danger" onclick="deleteEvent('${event.id}')">🗑️ Delete</button>
+            `;
+        }
+        
+        return `
+            <div class="event-item">
+                <div class="event-item-info">
+                    <h4>${event.name}</h4>
+                    <p>${event.description}</p>
+                    <span class="event-status-badge ${event.status}">
+                        ${event.status === 'winner_announced' ? '🎉 Winner Announced' :
+                          event.status === 'open' ? '🎪 Open' :
+                          event.status === 'closed' ? '🔒 Closed' : '📝 Draft'}
+                    </span>
+                </div>
+                <div class="event-item-meta">
+                    <p>Total Votes: <strong>${event.totalVotes || 0}</strong></p>
+                    ${event.winnerId ? `<p>Winner: <strong>${event.winnerId}</strong></p>` : ''}
+                </div>
+                <div class="event-item-actions">
+                    ${actionButtons}
+                </div>
             </div>
-            <div class="event-item-meta">
-                <p>Total Votes: <strong>${event.totalVotes || 0}</strong></p>
-                ${event.winnerId ? `<p>Winner: <strong>${event.winnerId}</strong></p>` : ''}
-            </div>
-            <div class="event-item-actions">
-                <button class="btn btn-danger" onclick="deleteEvent('${event.id}')">Delete Event</button>
-            </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 async function handleCreateEvent(e) {
