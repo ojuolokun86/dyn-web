@@ -319,6 +319,47 @@ footer {
         grid-template-columns: 1fr;
         gap: 16px;
         padding: 0 0.8rem;
+        min-height: auto; /* Allow content to determine height */
+        overflow: visible; /* Ensure no content is cut off */
+    }
+    
+    /* Ensure all cards are visible on mobile */
+    .home-column {
+        min-height: 200px; /* Minimum height for visibility */
+        margin-bottom: 16px;
+        overflow: visible; /* Prevent content cutoff */
+    }
+    
+    /* Fix Hall of Fame for mobile */
+    .hof-slide {
+        height: 280px !important;
+        display: block !important;
+        opacity: 1 !important;
+    }
+    
+    .hof-slide.active {
+        display: block !important;
+        opacity: 1 !important;
+        transform: scale(1) !important;
+    }
+    
+    .hof-slides {
+        min-height: 280px;
+        width: 100%;
+    }
+    
+    .hof-cinematic-container {
+        min-height: 320px;
+    }
+    
+    /* Fix Past Winner for mobile */
+    .past-winner-display {
+        min-height: 200px;
+    }
+    
+    /* Fix Upcoming Event for mobile */
+    .upcoming-event-display {
+        min-height: 200px;
     }
 }
 
