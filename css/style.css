@@ -325,16 +325,18 @@ footer {
     
     /* Ensure all cards are visible on mobile */
     .home-column {
-        min-height: 200px; /* Minimum height for visibility */
+        min-height: 150px; /* smaller minimum height for tighter stacking */
         margin-bottom: 16px;
         overflow: visible; /* Prevent content cutoff */
     }
     
-    /* Fix Hall of Fame for mobile */
+    /* Hall of Fame slideshow adjustments for mobile */
     .hof-slide {
-        height: 280px !important;
-        display: block !important;
-        opacity: 1 !important;
+        height: 180px !important; /* shrink slides on small screens */
+    }
+    .hof-slide:not(.active) {
+        display: none !important; /* hide non-active slides */
+        opacity: 0 !important;
     }
     
     .hof-slide.active {
@@ -344,30 +346,43 @@ footer {
     }
     
     .hof-slides {
-        min-height: 280px;
+        min-height: 180px;
         width: 100%;
     }
     
     .hof-cinematic-container {
-        min-height: 320px;
+        min-height: 200px;
     }
     
     /* Fix Past Winner for mobile */
     .past-winner-display {
-        min-height: 200px;
+        min-height: 150px;
     }
     
     /* Fix Upcoming Event for mobile */
     .upcoming-event-display {
-        min-height: 200px;
+        min-height: 150px;
     }
 }
 
 @media (max-width: 480px) {
     .home-three-container {
-        gap: 12px;
+        gap: 10px;
         padding: 0 0.5rem;
         margin: 8px auto 24px auto;
+    }
+    .home-column {
+        min-height: 120px;
+    }
+    .hof-slide {
+        height: 140px !important;
+    }
+    .hof-slides {
+        min-height: 140px;
+    }
+    .past-winner-display,
+    .upcoming-event-display {
+        min-height: 120px;
     }
 }
 /* Ensure the past-winner card centers in its column */

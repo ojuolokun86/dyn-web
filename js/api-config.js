@@ -8,7 +8,7 @@
  *   <script src="js/api-config.js"></script>
  *   // Access as: window.API_BASE_URL, window.isBackendRunning()
  */
-const url = 'https://dyn.fly.dev'//'https://dyn-web-backend.onrender.com'//'http://localhost:5000';
+const url = 'https://dyn.fly.dev';
 
 const API_BASE_URL = `${url}/api`;
 const BACKEND_URL = url;
