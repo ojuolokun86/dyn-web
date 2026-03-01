@@ -317,14 +317,14 @@ footer {
 @media (max-width: 768px) {
     .home-three-container {
         grid-template-columns: 1fr;
-        gap: 16px;
+        gap: 8px;  /* reduced from 16px */
         padding: 0 0.8rem;
         min-height: auto;
         overflow: visible;
     }
     
     .home-column {
-        margin-bottom: 16px;
+        margin-bottom: 4px;  /* reduced from 16px */
         overflow: visible;
     }
     
@@ -344,6 +344,29 @@ footer {
     .pw-slide {
         max-height: 250px;
         height: auto;
+    }
+    
+    /* Reduce padding in premium cards */
+    .upcoming-event-premium,
+    .past-winner-container,
+    .hof-cinematic-container {
+        padding: 12px 0;
+        margin: 0;
+    }
+    
+    /* Shrink section titles on mobile */
+    .section-title {
+        font-size: 1.2rem;
+        margin-bottom: 4px;
+    }
+    
+    .gold-underline {
+        margin: 4px auto 8px auto;
+    }
+    
+    .section-subtitle {
+        margin-bottom: 8px;
+        font-size: 0.85rem;
     }
 }
 
