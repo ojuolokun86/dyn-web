@@ -315,6 +315,20 @@ footer {
 }
 
 @media (max-width: 768px) {
+    /* Reduce hero to make room for sections */
+    .hero {
+        height: 35vh;  /* much smaller on mobile */
+        margin-bottom: 0;
+    }
+    
+    .hero-button {
+        top: 15%;
+    }
+    
+    .hero-content {
+        top: 50%;
+    }
+    
     .home-three-container {
         grid-template-columns: 1fr;
         gap: 4px;  /* minimal gap */
@@ -475,6 +489,11 @@ footer {
 }
 
 @media (max-width: 480px) {
+    /* Further reduce hero for tiny screens */
+    .hero {
+        height: 30vh;
+    }
+    
     .home-three-container {
         gap: 12px;
         padding: 0 0.5rem;
