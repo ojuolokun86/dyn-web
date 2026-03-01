@@ -989,6 +989,63 @@ async function loadEvents() {
     }
 }
 
+// Display events list in admin panel
+function displayEventsList(events) {
+    const listDiv = document.getElementById('eventsList');
+    if (!listDiv) return;
+    
+    if (!events || events.length === 0) {
+        listDiv.innerHTML = '<p class="empty-state">No events created yet</p>';
+        return;
+    }
+    
+    listDiv.innerHTML = events.map(event => {
+        const statusBadge = event.status === 'winner_announced' ? '🎉 Winner Announced' :
+                           event.status === 'open' ? '🎪 Event Open' :
+                           event.status === 'closed' ? '🔒 Closed' : '📝 Draft';
+        
+        let actionButtons = '';
+        if (event.status === 'draft') {
+            actionButtons = `
+                <button class="btn btn-small btn-success" onclick="openEvent('${event.id}')">Open Event</button>
+                <button class="btn btn-small btn-danger" onclick="deleteEvent('${event.id}')">Delete</button>
+            `;
+        } else if (event.status === 'open') {
+            actionButtons = `
+                <button class="btn btn-small btn-warning" onclick="closeEventToDraft('${event.id}')">Close to Draft</button>
+                <button class="btn btn-small btn-danger" onclick="closeEvent('${event.id}')">Close Event</button>
+            `;
+        } else if (event.status === 'closed') {
+            actionButtons = `
+                <button class="btn btn-small btn-primary" onclick="showWinnerSelect('${event.id}')">Announce Winner</button>
+            `;
+        } else if (event.status === 'winner_announced') {
+            actionButtons = `
+                <button class="btn btn-small btn-info" onclick="window.location.href='results.html'">View Results</button>
+                <button class="btn btn-small btn-warning" onclick="reopenEvent('${event.id}')">Reopen Event</button>
+                <button class="btn btn-small btn-danger" onclick="deleteEvent('${event.id}')">Delete</button>
+            `;
+        }
+        
+        return `
+            <div class="list-item">
+                <div class="item-header">
+                    <h3>${escapeHtml(event.name)}</h3>
+                    <span class="item-badge">${statusBadge}</span>
+                </div>
+                <div class="item-details">
+                    <span><strong>Description:</strong> ${escapeHtml(event.description || 'No description')}</span>
+                    <span><strong>Status:</strong> ${statusBadge}</span>
+                    <span><strong>Created:</strong> ${new Date(event.created_at).toLocaleDateString()}</span>
+                </div>
+                <div class="item-actions">
+                    ${actionButtons}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
 // ===== SUPERADMIN: Pending Requests =====
 async function loadPendingRequests() {
     const token = localStorage.getItem('adminToken');
@@ -1114,7 +1171,10 @@ function displayCurrentEvent(event) {
             `;
         } else if (event.status === 'open') {
             actions.innerHTML = `
-                <button class="btn btn-warning" onclick="closeEvent('${event.id}')">
+                <button class="btn btn-warning" onclick="closeEventToDraft('${event.id}')">
+                    📝 Close to Draft
+                </button>
+                <button class="btn btn-danger" onclick="closeEvent('${event.id}')">
                     🔒 Close Event
                 </button>
             `;
@@ -1452,6 +1512,32 @@ async function openEvent(eventId) {
         
         if (result.success) {
             alert('✨ Event opened for voting!');
+            loadEvents();
+        } else {
+            alert(`Error: ${result.error}`);
+        }
+    } catch (error) {
+        alert(`Error: ${error.message}`);
+    }
+}
+
+async function closeEventToDraft(eventId) {
+    const token = localStorage.getItem('adminToken');
+    
+    if (!confirm('Close this event back to draft? Voting will stop and event will return to draft status.')) return;
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/events/${eventId}/close-to-draft`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('📝 Event closed back to draft');
             loadEvents();
         } else {
             alert(`Error: ${result.error}`);

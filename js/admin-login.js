@@ -73,24 +73,23 @@ async function handleLogin(e) {
         console.error('Login error:', error);
         
         // For development: allow demo login if backend is not available
-        if (username === 'admin' && password === 'admin123') {
-            ');
-            const demoToken = generateDemoToken();
-            localStorage.setItem('adminToken', demoToken);
-            localStorage.setItem('adminUser', JSON.stringify({
-                id: '1',
-                username: 'admin',
-                role: 'admin',
-                demoMode: true
-            }));
+        // if (username === 'admin' && password === 'admin123') {
+        //     const demoToken = generateDemoToken();
+        //     localStorage.setItem('adminToken', demoToken);
+        //     localStorage.setItem('adminUser', JSON.stringify({
+        //         id: '1',
+        //         username: 'admin',
+        //         role: 'admin',
+        //         demoMode: true
+        //     }));
             
-            showMessage('Demo login successful! Redirecting...', 'success');
-            setTimeout(() => {
-                window.location.href = 'admin.html';
-            }, 1000);
-        } else {
-            showMessage('Connection error. Please try again or use demo credentials.', 'error');
-        }
+        //     showMessage('Demo login successful! Redirecting...', 'success');
+        //     setTimeout(() => {
+        //         window.location.href = 'admin.html';
+        //     }, 1000);
+        // } else {
+        //     showMessage('Connection error. Please try again or use demo credentials.', 'error');
+        // }
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;
