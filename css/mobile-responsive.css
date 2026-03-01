@@ -1,6 +1,12 @@
 /* Mobile Responsive Styles for DYNAMIC EFOOTBALL COMMUNITY */
 
 /* ===== GLOBAL MOBILE STYLES ===== */
+/* prevent unwanted horizontal scrolling on small screens */
+html,
+body {
+    overflow-x: hidden;
+}
+
 * {
     box-sizing: border-box;
 }
@@ -191,6 +197,8 @@ p {
         color: #333;
         text-decoration: none;
         transition: background-color 0.3s ease;
+        white-space: normal; /* wrap long labels so menu fits */
+        word-break: break-word;
     }
     
     .navbar-nav a:hover {
@@ -1018,6 +1026,12 @@ input[type="url"] {
     text-align: center;
     color: white;
     padding: 2rem 1rem;
+    width: 100%;          /* ensure full width regardless of viewport */
+    overflow: hidden;     /* guard against video overflow */
+}
+
+.hero-button {
+    top: 18%;             /* slightly higher so the floating button isn't cut off */
 }
 
 .hero-content h1 {
@@ -1054,12 +1068,24 @@ input[type="url"] {
         padding: 1rem 0.5rem;
     }
     
+    .hero-button {
+        top: 15%;            /* reduce top offset for very small screens */
+    }
+
     .hero-content h1 {
         font-size: 1.3rem;
     }
     
     .hero-content p {
         font-size: 0.8rem;
+    }
+
+    /* upcoming event full width on tiny devices */
+    .upcoming-event-premium {
+        width: 100%;
+        margin: 0 auto;
+        box-sizing: border-box;
+        padding: 0 0.5rem;
     }
 }
 
@@ -2256,6 +2282,16 @@ input[type="url"] {
 
     .contender-image {
         overflow: hidden;
+    }
+
+    /* ensure the three-column home layout never produces horizontal scroll */
+    .home-three-container {
+        padding: 0 0.5rem;
+        box-sizing: border-box;
+    }
+    .home-column {
+        width: 100%;
+        padding: 0;
     }
 
     .contender-image img {
