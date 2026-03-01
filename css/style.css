@@ -319,70 +319,39 @@ footer {
         grid-template-columns: 1fr;
         gap: 16px;
         padding: 0 0.8rem;
-        min-height: auto; /* Allow content to determine height */
-        overflow: visible; /* Ensure no content is cut off */
+        min-height: auto;
+        overflow: visible;
     }
     
-    /* Ensure all cards are visible on mobile */
     .home-column {
-        min-height: 150px; /* smaller minimum height for tighter stacking */
         margin-bottom: 16px;
-        overflow: visible; /* Prevent content cutoff */
+        overflow: visible;
     }
     
-    /* Hall of Fame slideshow adjustments for mobile */
+    /* Hall of Fame slideshow - only show active slide */
     .hof-slide {
-        height: 180px !important; /* shrink slides on small screens */
-    }
-    .hof-slide:not(.active) {
-        display: none !important; /* hide non-active slides */
+        display: none !important;
         opacity: 0 !important;
     }
     
     .hof-slide.active {
         display: block !important;
         opacity: 1 !important;
-        transform: scale(1) !important;
+        min-height: 200px;  /* minimum but allow to grow */
     }
     
-    .hof-slides {
-        min-height: 180px;
-        width: 100%;
-    }
-    
-    .hof-cinematic-container {
-        min-height: 200px;
-    }
-    
-    /* Fix Past Winner for mobile */
-    .past-winner-display {
-        min-height: 150px;
-    }
-    
-    /* Fix Upcoming Event for mobile */
-    .upcoming-event-display {
-        min-height: 150px;
+    /* Past winner adjustments */
+    .pw-slide {
+        max-height: 250px;
+        height: auto;
     }
 }
 
 @media (max-width: 480px) {
     .home-three-container {
-        gap: 10px;
+        gap: 12px;
         padding: 0 0.5rem;
         margin: 8px auto 24px auto;
-    }
-    .home-column {
-        min-height: 120px;
-    }
-    .hof-slide {
-        height: 140px !important;
-    }
-    .hof-slides {
-        min-height: 140px;
-    }
-    .past-winner-display,
-    .upcoming-event-display {
-        min-height: 120px;
     }
 }
 /* Ensure the past-winner card centers in its column */
