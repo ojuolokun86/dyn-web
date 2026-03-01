@@ -317,18 +317,112 @@ footer {
 @media (max-width: 768px) {
     .home-three-container {
         grid-template-columns: 1fr;
-        gap: 8px;  /* reduced from 16px */
+        gap: 4px;  /* minimal gap */
         padding: 0 0.8rem;
         min-height: auto;
         overflow: visible;
     }
     
     .home-column {
-        margin-bottom: 4px;  /* reduced from 16px */
+        margin-bottom: 0;  /* no margin */
         overflow: visible;
     }
     
-    /* Hall of Fame slideshow - only show active slide */
+    /* Shrink section titles on mobile */
+    .section-title {
+        font-size: 1rem;
+        margin-bottom: 2px;
+        font-weight: 600;
+    }
+    
+    .gold-underline {
+        margin: 2px auto 4px auto;
+        height: 1px;
+    }
+    
+    .section-subtitle {
+        margin-bottom: 4px;
+        font-size: 0.75rem;
+        display: none;  /* hide subtitle on mobile */
+    }
+    
+    /* Compact upcoming event */
+    .upcoming-event-premium {
+        padding: 8px 0;
+        margin: 0;
+    }
+    
+    .glass-card {
+        padding: 10px;
+        border-radius: 10px;
+    }
+    
+    .status-badge {
+        padding: 4px 8px;
+        font-size: 0.65rem;
+        margin-bottom: 6px;
+    }
+    
+    .glass-card h3 {
+        font-size: 1.1rem;
+        margin: 6px 0 !important;
+    }
+    
+    .glass-card p {
+        font-size: 0.8rem;
+        margin: 4px 0 !important;
+        line-height: 1.3;
+    }
+    
+    .premium-btn {
+        padding: 8px 16px;
+        font-size: 0.85rem;
+        margin-top: 8px;
+    }
+    
+    /* Compact past winner */
+    .past-winner-container {
+        padding: 4px 0;
+        margin: 0;
+    }
+    
+    .spotlight-bg {
+        padding: 8px 0;
+        border-radius: 8px;
+    }
+    
+    .trophy-icon {
+        font-size: 1.8rem;
+        margin-bottom: 4px;
+    }
+    
+    .pw-slide {
+        height: 140px;
+        margin: 8px 0;
+        border-radius: 10px;
+    }
+    
+    .winner-stats {
+        padding: 8px;
+        margin: 8px 0 0 0;
+        border-radius: 8px;
+    }
+    
+    .stat-item {
+        font-size: 0.75rem;
+        margin: 2px 0;
+    }
+    
+    /* Compact hall of fame */
+    .hof-cinematic-container {
+        padding: 4px;
+        border-radius: 10px;
+    }
+    
+    .hof-slideshow-container {
+        position: relative;
+    }
+    
     .hof-slide {
         display: none !important;
         opacity: 0 !important;
@@ -337,36 +431,46 @@ footer {
     .hof-slide.active {
         display: block !important;
         opacity: 1 !important;
-        min-height: 200px;  /* minimum but allow to grow */
+        height: 140px;  /* compact height */
+        border-radius: 10px;
     }
     
-    /* Past winner adjustments */
-    .pw-slide {
-        max-height: 250px;
-        height: auto;
+    .hof-nav {
+        width: 28px;
+        height: 28px;
+        font-size: 14px;
     }
     
-    /* Reduce padding in premium cards */
-    .upcoming-event-premium,
-    .past-winner-container,
-    .hof-cinematic-container {
-        padding: 12px 0;
-        margin: 0;
+    .hof-counter {
+        font-size: 0.7rem;
+        color: #FFD700;
+        margin-top: 4px;
     }
     
-    /* Shrink section titles on mobile */
-    .section-title {
-        font-size: 1.2rem;
+    .hof-text-overlay {
+        padding: 12px 10px;
+    }
+    
+    .hof-player-name-cinematic {
+        font-size: 1rem;
         margin-bottom: 4px;
     }
     
-    .gold-underline {
-        margin: 4px auto 8px auto;
+    .hof-award-line {
+        font-size: 0.85rem;
+        margin-bottom: 2px;
     }
     
-    .section-subtitle {
-        margin-bottom: 8px;
-        font-size: 0.85rem;
+    .hof-team-info,
+    .hof-league-info {
+        font-size: 0.75rem;
+    }
+    
+    .hof-team-logo-cinematic {
+        width: 35px;
+        height: 35px;
+        top: 8px;
+        left: 8px;
     }
 }
 
