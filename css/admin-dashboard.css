@@ -141,12 +141,13 @@ body {
     display: none;
     flex: 1;
     padding: 30px;
-    overflow-y: auto;
-    animation: fadeIn 0.3s ease-in;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
 .content-section.active {
     display: block;
+    opacity: 1;
 }
 
 @keyframes fadeIn {

@@ -10,6 +10,78 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// Render upcoming event with premium styles and strict column targeting
+function renderUpcomingEvent(event, targetCol) {
+    const col = targetCol; // Use the passed column directly
+    if (!col) {
+        return;
+    }
+
+    // Always render content - never leave blank
+    if (!event) {
+        col.innerHTML = `
+            <div class="upcoming-event-premium">
+                <div class="section-title">🔥 UPCOMING EVENT</div>
+                <div class="gold-underline"></div>
+                <div class="glass-card">
+                    <div class="status-badge closed">NO UPCOMING EVENT</div>
+                    <h3 style="color: #FFD700; font-size: 1.3rem; margin: 15px 0;">No Upcoming Event Yet</h3>
+                    <p style="color: rgba(255,255,255,0.8); line-height: 1.6;">Stay tuned for the next competition.</p>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    if (event.status === 'draft') {
+        col.innerHTML = `
+            <div class="upcoming-event-premium">
+                <div class="section-title">🔥 UPCOMING EVENT</div>
+                <div class="gold-underline"></div>
+                <div class="glass-card">
+                    <div class="status-badge coming-soon">COMING SOON</div>
+                    <h3 style="color: #FFD700; font-size: 1.4rem; margin: 15px 0;">${escapeHtml(event.name)}</h3>
+                    ${event.description ? `<p style="color: rgba(255,255,255,0.8); line-height: 1.6; margin: 10px 0;">${escapeHtml(event.description)}</p>` : ''}
+                    <div style="color: #4169e1; font-weight: 600; margin-top: 15px;">Status: <strong>Coming Soon</strong></div>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    if (event.status === 'open') {
+        col.innerHTML = `
+            <div class="upcoming-event-premium">
+                <div class="section-title">🔥 UPCOMING EVENT</div>
+                <div class="gold-underline"></div>
+                <div class="glass-card">
+                    <div class="status-badge open">OPEN</div>
+                    <h3 style="color: #FFD700; font-size: 1.4rem; margin: 15px 0;">${escapeHtml(event.name)}</h3>
+                    ${event.description ? `<p style="color: rgba(255,255,255,0.8); line-height: 1.6; margin: 10px 0;">${escapeHtml(event.description)}</p>` : ''}
+                    <div style="color: #00ff88; font-weight: 600; margin: 15px 0;">Status: <strong>Open for Voting</strong></div>
+                    <button class="premium-btn" onclick="window.location.href='contenders.html'">
+                        ✨ Get Started
+                    </button>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    // closed or winner_announced -> show fallback message
+    col.innerHTML = `
+        <div class="upcoming-event-premium">
+            <div class="section-title">🔥 UPCOMING EVENT</div>
+            <div class="gold-underline"></div>
+            <div class="glass-card">
+                <div class="status-badge closed">CLOSED</div>
+                <h3 style="color: #FFD700; font-size: 1.3rem; margin: 15px 0;">No Upcoming Event Yet</h3>
+                <p style="color: rgba(255,255,255,0.8); line-height: 1.6;">Stay tuned for the next competition.</p>
+            </div>
+        </div>
+    `;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Mobile menu toggle
     const mobileMenuToggle = document.getElementById('mobileMenuToggle');
@@ -38,505 +110,345 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
-
+    
     // Load event data
     loadEvent();
 });
 
 async function loadEvent() {
-    heroContent.innerHTML = ""; // clear previous content
-    heroButtonContainer.innerHTML = ""; // clear button container
+    
+    // Only call ensureHomeThreeLayout() ONCE
+    const layout = ensureHomeThreeLayout();
+
+    // Clear any existing intervals to prevent memory leaks
+    if (layout.hofCol._hofInterval) clearInterval(layout.hofCol._hofInterval);
+    if (layout.pastCol._pwInterval) clearInterval(layout.pastCol._pwInterval);
 
     try {
-        // Fetch current event from backend
-        const response = await fetch(`${API_BASE_URL}/events/current`);
+        const response = await fetch(`${API_BASE_URL}/events/home`);
         const result = await response.json();
 
-        if (!result.success || !result.data) {
-            // No active event - check for past winner AND upcoming events
-            await loadPastWinnerWithUpcomingEvents();
+        let upcomingEvent = null;
+        if (result.success && result.data) {
+            upcomingEvent = result.data.upcoming;
+        }
+
+        // Render columns in strict order with proper targeting:
+        // Left Column      → 📅 Upcoming Event
+        // Center Column    → 🏆 Past Winner  
+        // Right Column     → 👑 Hall of Fame
+
+        await renderUpcomingEvent(upcomingEvent, layout.upcomingCol); // Left
+        await renderPastWinnersSlideshow(layout.pastCol);           // Center
+        await renderHallOfFame(layout.hofCol);                     // Right
+
+    } catch (error) {
+        console.error('❌ [ERROR] loadEvent failed:', error);
+        // Render fallback for all sections in case of major error
+        renderUpcomingEvent(null, layout.upcomingCol);
+        renderPastWinnersSlideshow(layout.pastCol);
+        renderHallOfFame(layout.hofCol);
+    }
+}
+
+// Ensure the three-column layout exists and return column elements (container is defined statically in HTML)
+function ensureHomeThreeLayout() {
+    const container = document.querySelector('.home-three-container');
+    if (!container) {
+        // fallback: create dynamically if missing
+        const created = document.createElement('div');
+        created.className = 'home-three-container';
+        ['home-col-hof','home-col-past','home-col-upcoming'].forEach(cls => {
+            const d = document.createElement('div');
+            d.className = 'home-column ' + cls;
+            created.appendChild(d);
+        });
+        document.querySelector('.hero')?.appendChild(created);
+        return {
+            container: created,
+            hofCol: created.querySelector('.home-col-hof'),
+            pastCol: created.querySelector('.home-col-past'),
+            upcomingCol: created.querySelector('.home-col-upcoming')
+        };
+    }
+    // clear each column only if needed (removed to prevent flashing)
+    return {
+        container,
+        hofCol: container.querySelector('.home-col-hof'),
+        pastCol: container.querySelector('.home-col-past'),
+        upcomingCol: container.querySelector('.home-col-upcoming')
+    };
+}
+
+
+// Render past winners slideshow into provided column with premium styles and strict targeting
+async function renderPastWinnersSlideshow(col) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/events/past-winners`);
+        const result = await response.json();
+
+        if (!col) {
+            console.error('❌ [ERROR] No past winner column provided!');
             return;
         }
 
-        const event = result.data;
+        if (result.success && Array.isArray(result.data) && result.data.length > 0) {
+            const winners = result.data;
 
-        // Event is active
-        if (event.status === 'winner_announced') {
-            // Fetch winner details
-            loadWinnerAnnouncement(event);
-            return;
-        }
-
-        if (event.status === 'open') {
-            // Event is open for voting
-            // Update header title to current event
-            const siteTitle = document.getElementById('siteTitle');
-            if (siteTitle) siteTitle.textContent = `🏆 ${event.name}`;
-            document.title = event.name;
-            heroButtonContainer.innerHTML = `
-                <button id="startBtn" class="hero-btn">✨ Get Started</button>
-            `;
-
-            heroContent.innerHTML = `
-                <div class="event-active-message">
-                    <h2>${event.name}</h2>
-                    ${event.description ? `<p>${event.description}</p>` : ''}
+            col.innerHTML = `
+                <div class="section-title">🏆 LAST SEASON WINNER</div>
+                <div class="gold-underline"></div>
+                <div class="section-subtitle">Ballon D'or Champion</div>
+                <div class="past-winner-container">
+                    <div class="spotlight-bg">
+                        <div class="trophy-icon">🏆</div>
+                        <div class="pw-slides"></div>
+                        <div class="winner-stats">
+                            <div class="stat-item">Season Champion</div>
+                            <div class="stat-item">Elite Performance</div>
+                        </div>
+                    </div>
                 </div>
             `;
 
-            const startBtn = document.getElementById("startBtn");
-            startBtn.addEventListener("click", () => {
-                window.location.href = 'contenders.html';
+            const slidesWrap = col.querySelector('.pw-slides');
+            let currentSlide = 0;
+
+            winners.forEach((w, idx) => {
+                const pic = w.winner_picture || '';
+                const slide = document.createElement('div');
+                slide.className = 'pw-slide winner-image-glow';
+                slide.style.backgroundImage = pic ? `url('${escapeHtml(pic)}')` : '';
+                slide.style.backgroundSize = 'contain';
+                slide.style.backgroundPosition = 'center';
+                slide.style.backgroundRepeat = 'no-repeat';
+                slide.style.height = '300px';
+                slide.style.margin = '20px 0';
+                slide.style.display = idx === 0 ? 'block' : 'none';
+                slide.style.animation = idx === 0 ? 'imageGlow 2s ease-in-out infinite alternate' : 'none';
+
+                slide.innerHTML = `
+                    <div style="padding: 20px; background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 60%); border-radius: 12px; height: 100%; display: flex; flex-direction: column; justify-content: flex-end;">
+                        <div class="winner-name-main">${escapeHtml(w.winner_name)}</div>
+                        <div class="pw-event-name" style="color: #FFD700; font-size: 1.2rem; margin-bottom: 10px;">${escapeHtml(w.event_name)}</div>
+                        <div class="pw-winner-meta" style="color: rgba(255,255,255,0.9); font-size: 1rem;">
+                            <span>${escapeHtml(w.winner_class || '')}</span>
+                            <span>${escapeHtml(w.winner_country || '')}</span>
+                        </div>
+                    </div>
+                `;
+                slidesWrap.appendChild(slide);
             });
-            return;
-        }
 
-        if (event.status === 'closed') {
-            // Update header title to event name (closed)
-            const siteTitle = document.getElementById('siteTitle');
-            if (siteTitle) siteTitle.textContent = `🏆 ${event.name}`;
-            document.title = event.name;
-            heroContent.innerHTML = `
-                <div class="event-closed-message">
-                    <h2>🔒 Event Closed</h2>
-                    <p>${event.name} is no longer accepting votes</p>
-                    <p><a href="results.html">View Results →</a></p>
-                </div>
-            `;
-            return;
-        }
-
-        // Draft status — update header and show with upcoming events
-        const siteTitle = document.getElementById('siteTitle');
-        if (siteTitle) siteTitle.textContent = `🏆 DYNAMIC EFOOTBALL COMMUNITY`;
-        document.title = 'DYNAMIC EFOOTBALL COMMUNITY';
-        
-        // Show upcoming events section
-        heroContent.innerHTML = `
-            <div class="home-content-wrapper">
-                <div class="upcoming-events-section">
-                    <h2>📋 Upcoming Event</h2>
-                    <div class="upcoming-event-card">
-                        <h3>${event.name}</h3>
-                        ${event.description ? `<p>${event.description}</p>` : ''}
-                        <p class="event-status">Coming Soon...</p>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        // Load past winners section
-        await loadPastWinnerSection();
-
-    } catch (error) {
-        console.error('Error loading event:', error);
-        heroContent.innerHTML = `
-            <div class="event-error-message">
-                <h2>Unable to Load Event</h2>
-                <p>Please try again later</p>
-            </div>
-        `;
-    }
-}
-
-// Load past winner when no current event
-async function loadPastWinner() {
-    try {
-        console.log('Loading past winner...');
-        // Fetch past events with winners
-        const response = await fetch(`${API_BASE_URL}/events/past-winners`);
-        console.log('Past winners response:', response);
-        const result = await response.json();
-        console.log('Past winners result:', result);
-        
-        if (result.success && result.data && result.data.length > 0) {
-            const pastWinner = result.data[0]; // Get most recent winner
+            const slideEls = slidesWrap.querySelectorAll('.pw-slide');
             
-            // Check if winner is within 3 months
-            const winnerDate = new Date(pastWinner.ended_at || pastWinner.updated_at);
-            const threeMonthsAgo = new Date();
-            threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-            
-            if (winnerDate > threeMonthsAgo) {
-                // Display past winner
-                heroContent.innerHTML = `
-                    <div class="past-winner-display">
-                        <div class="past-winner-header">
-                            <h2>🏆 Last Winner</h2>
-                            <p style="opacity: 0.8; margin-bottom: 20px;">${pastWinner.event_name}</p>
-                        </div>
-                        <div class="past-winner-content">
-                            <div class="past-winner-info">
-                                ${pastWinner.winner_picture ? `<div class="past-winner-image-bg" style="background-image: url('${escapeHtml(pastWinner.winner_picture)}')"></div>` : ''}
-                                <div class="past-winner-content-overlay">
-                                    <div class="past-winner-name">${escapeHtml(pastWinner.winner_name)}</div>
-                                    <div class="past-winner-meta">
-                                        <span class="past-winner-class">${escapeHtml(pastWinner.winner_class || 'N/A')}</span>
-                                        <span class="past-winner-country">${escapeHtml(pastWinner.winner_country || 'N/A')}</span>
-                                    </div>
-                                    <div class="past-winner-points">${pastWinner.winner_points || 0} Points</div>
-                                </div>
-                            </div>
-                            ${pastWinner.winner_video ? `
-                                <div class="past-winner-video">
-                                    <video controls autoplay muted loop style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 15px;">
-                                        <source src="${pastWinner.winner_video}" type="video/mp4">
-                                        Your browser does not support the video tag.
-                                    </video>
-                                </div>
-                            ` : ''}
-                        </div>
-                        <div class="past-winner-footer">
-                            <p style="opacity: 0.7; font-size: 14px;">Winner announced ${new Date(winnerDate).toLocaleDateString()}</p>
-                            <a href="results.html" class="view-results-btn">View Full Results →</a>
-                        </div>
-                    </div>
-                `;
-                
-                // Update header
-                const siteTitle = document.getElementById('siteTitle');
-                if (siteTitle) siteTitle.textContent = '🏆 DYNAMIC EFOOTBALL COMMUNITY';
-                document.title = 'DYNAMIC EFOOTBALL COMMUNITY - Past Winner';
-                return;
-            }
-        }
-        
-        // No recent winner - show default message
-        const siteTitle = document.getElementById('siteTitle');
-        if (siteTitle) siteTitle.textContent = 'DYNAMIC EFOOTBALL COMMUNITY';
-        document.title = 'DYNAMIC EFOOTBALL COMMUNITY';
-        heroContent.innerHTML = `
-            <div class="event-closed-message">
-                <h2>🎪 No Event Currently Active</h2>
-                <p>Please check back later for our next event.</p>
-                <p class="secondary-text">Thank you for your interest in DYNAMIC EFOOTBALL COMMUNITY!</p>
-            </div>
-        `;
-        
-    } catch (error) {
-        console.error('Error loading past winner:', error);
-        // Fallback to default message
-        const siteTitle = document.getElementById('siteTitle');
-        if (siteTitle) siteTitle.textContent = 'DYNAMIC EFOOTBALL COMMUNITY';
-        document.title = 'DYNAMIC EFOOTBALL COMMUNITY';
-        heroContent.innerHTML = `
-            <div class="event-closed-message">
-                <h2>🎪 No Event Currently Active</h2>
-                <p>Please check back later for our next event.</p>
-                <p class="secondary-text">Thank you for your interest in DYNAMIC EFOOTBALL COMMUNITY!</p>
-            </div>
-        `;
-    }
-}
-
-// Load past winner section (used after showing upcoming events)
-async function loadPastWinnerSection() {
-    try {
-        console.log('Loading past winner section...');
-        // Fetch past events with winners
-        const response = await fetch(`${API_BASE_URL}/events/past-winners`);
-        const result = await response.json();
-        console.log('Past winners result:', result);
-        
-        if (result.success && result.data && result.data.length > 0) {
-            const pastWinner = result.data[0]; // Get most recent winner
-            
-            // Check if winner is within 3 months
-            const winnerDate = new Date(pastWinner.ended_at || pastWinner.updated_at);
-            const threeMonthsAgo = new Date();
-            threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-            
-            if (winnerDate > threeMonthsAgo) {
-                // Get the wrapper and append divider + past winner
-                const wrapper = document.querySelector('.home-content-wrapper') || heroContent;
-                
-                // Create divider and past winner HTML
-                const divider = document.createElement('div');
-                divider.className = 'section-divider';
-                
-                const pastWinnerDiv = document.createElement('div');
-                pastWinnerDiv.className = 'past-winner-display';
-                pastWinnerDiv.innerHTML = `
-                    <div class="past-winner-header">
-                        <h2>🏆 Previous Winner</h2>
-                        <p style="opacity: 0.8; margin-bottom: 20px;">${pastWinner.event_name}</p>
-                    </div>
-                    <div class="past-winner-content">
-                        <div class="past-winner-info">
-                            ${pastWinner.winner_picture ? `<div class="past-winner-image-bg" style="background-image: url('${escapeHtml(pastWinner.winner_picture)}')"></div>` : ''}
-                            <div class="past-winner-content-overlay">
-                                <div class="past-winner-name">${escapeHtml(pastWinner.winner_name)}</div>
-                                <div class="past-winner-meta">
-                                    <span class="past-winner-class">${escapeHtml(pastWinner.winner_class || 'N/A')}</span>
-                                    <span class="past-winner-country">${escapeHtml(pastWinner.winner_country || 'N/A')}</span>
-                                </div>
-                                <div class="past-winner-points">${pastWinner.winner_points || 0} Points</div>
-                            </div>
-                        </div>
-                        ${pastWinner.winner_video ? `
-                            <div class="past-winner-video">
-                                <video controls autoplay muted loop style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 15px;">
-                                    <source src="${pastWinner.winner_video}" type="video/mp4">
-                                    Your browser does not support the video tag.
-                                </video>
-                            </div>
-                        ` : ''}
-                    </div>
-                    <div class="past-winner-footer">
-                        <p style="opacity: 0.7; font-size: 14px;">Winner announced ${new Date(winnerDate).toLocaleDateString()}</p>
-                        <a href="results.html" class="view-results-btn">View Full Results →</a>
-                    </div>
-                `;
-                
-                // Append to wrapper
-                if (wrapper) {
-                    wrapper.appendChild(divider);
-                    wrapper.appendChild(pastWinnerDiv);
-                }
-            }
-        }
-    } catch (error) {
-        console.error('Error loading past winner section:', error);
-    }
-}
-
-// Load past winner and upcoming events when no active event
-async function loadPastWinnerWithUpcomingEvents() {
-    try {
-        const siteTitle = document.getElementById('siteTitle');
-        document.title = 'DYNAMIC EFOOTBALL COMMUNITY';
-        
-        // Try to fetch draft events from admin endpoint (only works if admin is logged in)
-        let upcomingEvents = [];
-        const token = localStorage.getItem('adminToken');
-        if (token) {
-            try {
-                const allEventsResponse = await fetch(`${API_BASE_URL}/events`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
+            function showSlide(index) {
+                slideEls.forEach((el, idx) => {
+                    el.style.display = idx === index ? 'block' : 'none';
+                    el.style.animation = idx === index ? 'imageGlow 2s ease-in-out infinite alternate' : 'none';
                 });
-                
-                if (allEventsResponse.ok) {
-                    const allEventsResult = await allEventsResponse.json();
-                    if (allEventsResult.success && allEventsResult.data) {
-                        upcomingEvents = allEventsResult.data.filter(e => e.status === 'draft');
-                    }
-                }
-            } catch (error) {
-                console.log('Could not fetch draft events. Skipping upcoming events section.');
             }
-        }
-        
-        // Try to fetch past winners
-        const winnerResponse = await fetch(`${API_BASE_URL}/events/past-winners`);
-        const winnerResult = await winnerResponse.json();
-        
-        let hasPastWinner = false;
-        let pastWinnerHtml = '';
-        
-        if (winnerResult.success && winnerResult.data && winnerResult.data.length > 0) {
-            const pastWinner = winnerResult.data[0];
-            const winnerDate = new Date(pastWinner.ended_at || pastWinner.updated_at);
-            const threeMonthsAgo = new Date();
-            threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+            // Auto-rotate slides
+            const interval = setInterval(() => {
+                currentSlide = (currentSlide + 1) % slideEls.length;
+                showSlide(currentSlide);
+            }, 5000);
             
-            if (winnerDate > threeMonthsAgo) {
-                hasPastWinner = true;
-                pastWinnerHtml = `
-                    <div class="past-winner-display">
-                        <div class="past-winner-header">
-                            <h2>🏆 Last Winner</h2>
-                            <p style="opacity: 0.8; margin-bottom: 20px;">${pastWinner.event_name}</p>
-                        </div>
-                        <div class="past-winner-content">
-                            <div class="past-winner-info">
-                                ${pastWinner.winner_picture ? `<div class="past-winner-image-bg" style="background-image: url('${escapeHtml(pastWinner.winner_picture)}')"></div>` : ''}
-                                <div class="past-winner-content-overlay">
-                                    <div class="past-winner-name">${escapeHtml(pastWinner.winner_name)}</div>
-                                    <div class="past-winner-meta">
-                                        <span class="past-winner-class">${escapeHtml(pastWinner.winner_class || 'N/A')}</span>
-                                        <span class="past-winner-country">${escapeHtml(pastWinner.winner_country || 'N/A')}</span>
-                                    </div>
-                                    <div class="past-winner-points">${pastWinner.winner_points || 0} Points</div>
-                                </div>
-                            </div>
-                            ${pastWinner.winner_video ? `
-                                <div class="past-winner-video">
-                                    <video controls autoplay muted loop style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 15px;">
-                                        <source src="${pastWinner.winner_video}" type="video/mp4">
-                                        Your browser does not support the video tag.
-                                    </video>
-                                </div>
-                            ` : ''}
-                        </div>
-                        <div class="past-winner-footer">
-                            <p style="opacity: 0.7; font-size: 14px;">Winner announced ${new Date(winnerDate).toLocaleDateString()}</p>
-                            <a href="results.html" class="view-results-btn">View Full Results →</a>
-                        </div>
-                    </div>
-                `;
-            }
-        }
-        
-        // Build upcoming events HTML
-        let upcomingHtml = '';
-        if (upcomingEvents.length > 0) {
-            upcomingHtml = `
-                <div class="upcoming-events-section">
-                    <h2>📋 Upcoming Events</h2>
-                    <div class="upcoming-events-list">
-                        ${upcomingEvents.map(event => `
-                            <div class="upcoming-event-card">
-                                <h3>${event.name}</h3>
-                                ${event.description ? `<p>${event.description}</p>` : ''}
-                                <p class="event-status">Coming Soon...</p>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-        }
-        
-        // Determine what to show
-        if (hasPastWinner || upcomingEvents.length > 0) {
-            if (siteTitle) siteTitle.textContent = '🏆 DYNAMIC EFOOTBALL COMMUNITY';
-            
-            heroContent.innerHTML = `
-                <div class="home-content-wrapper">
-                    ${upcomingHtml}
-                    ${hasPastWinner ? `
-                        ${upcomingEvents.length > 0 ? '<div class="section-divider"></div>' : ''}
-                        ${pastWinnerHtml}
-                    ` : ''}
-                </div>
-            `;
+            col._pwInterval = interval;
         } else {
-            // No past winners and no upcoming events
-            if (siteTitle) siteTitle.textContent = 'DYNAMIC EFOOTBALL COMMUNITY';
-            heroContent.innerHTML = `
-                <div class="event-closed-message">
-                    <h2>🎪 No Event Currently Active</h2>
-                    <p>Please check back later for our next event.</p>
-                    <p class="secondary-text">Thank you for your interest in DYNAMIC EFOOTBALL COMMUNITY!</p>
+            col.innerHTML = `
+                <div class="section-title">🏆 LAST SEASON WINNER</div>
+                <div class="gold-underline"></div>
+                <div class="section-subtitle">Ballon D'or Champion</div>
+                <div class="glass-card">
+                    <div class="trophy-icon">🏆</div>
+                    <div style="color: #FFD700; font-size: 1.5rem; margin: 20px 0;">No past winners yet</div>
+                    <div style="color: rgba(255,255,255,0.7);">Champions will be crowned here</div>
                 </div>
             `;
         }
-        
     } catch (error) {
-        console.error('Error loading past winner and events:', error);
-        const siteTitle = document.getElementById('siteTitle');
-        if (siteTitle) siteTitle.textContent = 'DYNAMIC EFOOTBALL COMMUNITY';
-        document.title = 'DYNAMIC EFOOTBALL COMMUNITY';
-        heroContent.innerHTML = `
-            <div class="event-closed-message">
-                <h2>🎪 No Event Currently Active</h2>
-                <p>Please check back later for our next event.</p>
-                <p class="secondary-text">Thank you for your interest in DYNAMIC EFOOTBALL COMMUNITY!</p>
+        console.error('❌ [ERROR] renderPastWinnersSlideshow failed:', error);
+        col && (col.innerHTML = `
+            <div class="section-title">🏆 LAST SEASON WINNER</div>
+            <div class="gold-underline"></div>
+            <div class="section-subtitle">Ballon D'or Champion</div>
+            <div class="glass-card">
+                <div class="trophy-icon">🏆</div>
+                <div style="color: #FFD700; font-size: 1.5rem; margin: 20px 0;">Error loading winner</div>
             </div>
-        `;
+        `);
     }
 }
 
-// Load winner announcement with animations
-async function loadWinnerAnnouncement(event) {
+// appendPastWinnerSection kept for backwards compatibility but now delegates to the slideshow
+async function appendPastWinnerSection(col) {
+    return renderPastWinnersSlideshow(col);
+}
+
+
+// Render Hall of Fame into provided column with premium styles and strict targeting
+async function renderHallOfFame(col) {
     try {
-        // Fetch winner details
-        const response = await fetch(`${API_BASE_URL}/events/${event.id}/contenders`);
+        const response = await fetch(`${API_BASE_URL}/admin/hall-of-fame-web`);
         const result = await response.json();
-        
-        if (result.success && result.data && event.winner_id) {
-            const winner = result.data.find(c => c.id === event.winner_id);
-            
-            if (winner) {
-                // Create confetti effect
-                createConfetti();
-                
-                // Show winner announcement
-                heroContent.innerHTML = `
-                    <div class="winner-announcement">
-                        <div class="winner-content">
-                            <div class="winner-crown">👑</div>
-                            <div class="winner-title">🏆 WINNER ANNOUNCED 🏆</div>
-                            <div class="winner-name">${escapeHtml(winner.name)}</div>
-                            <div class="winner-medal">🥇</div>
-                            ${winner.video ? `
-                                <div class="winner-video-container">
-                                    <video class="winner-video" controls autoplay muted loop>
-                                        <source src="${winner.video}" type="video/mp4">
-                                        Your browser does not support the video tag.
-                                    </video>
-                                </div>
-                            ` : ''}
-                            <div style="margin-top: 30px;">
-                                <button onclick="this.closest('.winner-announcement').remove()" style="background: white; color: #667eea; border: none; padding: 15px 30px; border-radius: 10px; cursor: pointer; font-size: 18px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.2);">Continue to Results →</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                // Auto-remove after 10 seconds if user doesn't close
-                setTimeout(() => {
-                    const announcement = document.querySelector('.winner-announcement');
-                    if (announcement) announcement.remove();
-                    // Show normal winner message
-                    heroContent.innerHTML = `
-                        <div class="event-winner-message">
-                            <h2>🎉 Winner Announced!</h2>
-                            <p>${event.name} has concluded</p>
-                            <p><a href="results.html">View Results →</a></p>
-                        </div>
-                    `;
-                }, 10000);
+
+        if (!col) {
+            console.error('❌ [ERROR] No Hall of Fame column provided!');
+            return;
+        }
+
+        if (!result || !result.success || !result.data) {
+            col.innerHTML = `
+                <div class="section-title">👑 HALL OF FAME</div>
+                <div class="gold-underline"></div>
+                <div class="section-subtitle">No champions yet</div>
+            `;
+            return;
+        }
+
+        const raw = result.data;
+        // recursively flatten raw structure into a list of player objects with league info
+        function collectSlides(node, out) {
+            if (!node) return;
+            if (Array.isArray(node)) {
+                node.forEach(item => collectSlides(item, out));
+            } else if (typeof node === 'object') {
+                // Check if this is a league (key) with players
+                if (Object.keys(node).length > 0 && !node.player_name && !node.name) {
+                    // This is a league object - iterate through its players
+                    Object.keys(node).forEach(leagueName => {
+                        const players = node[leagueName];
+                        // Add league info to each player
+                        Object.values(players).forEach(player => {
+                            player.league = leagueName; // Add league name to player object
+                            out.push(player);
+                        });
+                    });
+                } else if ('player_name' in node || 'name' in node || 'playerName' in node) {
+                    // This is a player object
+                    out.push(node);
+                } else {
+                    Object.values(node).forEach(val => collectSlides(val, out));
+                }
             }
         }
-    } catch (error) {
-        console.error('Error loading winner:', error);
-        // Fallback to basic message
-        heroContent.innerHTML = `
-            <div class="event-winner-message">
-                <h2>🎉 Winner Announced!</h2>
-                <p>${event.name} has concluded</p>
-                <p><a href="results.html">View Results →</a></p>
+        let slides = [];
+        collectSlides(raw, slides);
+
+        // ensure each slide's wins property is an array
+        slides = slides.map(p => {
+            if (p && p.wins && !Array.isArray(p.wins)) {
+                p.wins = Object.values(p.wins);
+            }
+            return p;
+        });
+
+        if (!slides.length) {
+            col.innerHTML = `
+                <div class="section-title">👑 HALL OF FAME</div>
+                <div class="gold-underline"></div>
+                <div class="section-subtitle">Legendary Champions Coming Soon</div>
+            `;
+            return;
+        }
+
+        // Build premium HTML structure with cinematic container
+        col.innerHTML = `
+            <div class="section-title">👑 HALL OF FAME</div>
+            <div class="gold-underline"></div>
+            <div class="section-subtitle">Legendary Champions of Our Community</div>
+            <div class="hof-cinematic-container">
+                <div class="hof-slideshow-container">
+                    <div class="hof-slides"></div>
+                    <div class="hof-nav prev">‹</div>
+                    <div class="hof-nav next">›</div>
+                </div>
+                <div class="hof-counter">1 / ${slides.length}</div>
             </div>
         `;
-    }
-}
 
-// Create confetti effect
-function createConfetti() {
-    const colors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'];
-    
-    for (let i = 0; i < 50; i++) {
-        setTimeout(() => {
-            const confetti = document.createElement('div');
-            confetti.className = 'confetti';
-            confetti.style.left = Math.random() * 100 + '%';
-            confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
-            confetti.style.animationDelay = Math.random() * 3 + 's';
-            confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
-            document.body.appendChild(confetti);
+        const container = col.querySelector('.hof-slideshow-container');
+        const slidesWrap = container.querySelector('.hof-slides');
+        const counter = col.querySelector('.hof-counter');
+        const prevBtn = container.querySelector('.hof-nav.prev');
+        const nextBtn = container.querySelector('.hof-nav.next');
+
+        
+        slides.forEach((p, idx) => {
+            const playerPicture = p.player_image || (p.wins && p.wins[0] && p.wins[0].player_image) || '';
+            const teamLogo = (p.wins && p.wins[0] && p.wins[0].team_logo) || '';
+            const teamName = (p.wins && p.wins[0] && p.wins[0].team_name) || '';
+            const playerName = p.player_name || p.name || p.playerName || '';
             
-            // Remove confetti after animation
-            setTimeout(() => confetti.remove(), 5000);
-        }, i * 100);
+            // Get award information from API data
+            let awardName = 'Hall of Fame Champion';
+            if (p.wins && p.wins[0]) {
+                const win = p.wins[0];
+                awardName = win.event_name || win.competition_name || win.title || 'Champion';
+            }
+
+            const slide = document.createElement('div');
+            slide.className = 'hof-slide';
+            slide.style.backgroundImage = playerPicture ? `url('${escapeHtml(playerPicture)}')` : '';
+            
+            slide.innerHTML = `
+                ${teamLogo ? `
+                    <div class="hof-team-logo-cinematic">
+                        <img src="${escapeHtml(teamLogo)}" alt="${escapeHtml(teamName)}">
+                    </div>
+                ` : ''}
+                <div class="hof-text-overlay">
+                    <div class="hof-player-name-cinematic">${escapeHtml(playerName)}</div>
+                    <div class="hof-award-line">
+                        <span class="hof-award-icon">🏆</span>
+                        ${escapeHtml(awardName)}
+                    </div>
+                    ${teamName ? `<div class="hof-team-info">${escapeHtml(teamName)}</div>` : ''}
+                    <div class="hof-league-info">${escapeHtml(p.league)}</div>
+                </div>
+            `;
+
+            slidesWrap.appendChild(slide);
+        });
+
+        const slideEls = slidesWrap.querySelectorAll('.hof-slide');
+        let current = 0;
+        
+        function showSlide(index) {
+            slideEls.forEach((el, idx) => {
+                el.classList.toggle('active', idx === index);
+            });
+            counter.textContent = `${index + 1} / ${slideEls.length}`;
+        }
+        
+        showSlide(0);
+
+        // Auto-rotate
+        const interval = setInterval(() => {
+            current = (current + 1) % slideEls.length;
+            showSlide(current);
+        }, 4500);
+        container._hofInterval = interval;
+
+        // Manual navigation
+        prevBtn.addEventListener('click', () => {
+            current = (current - 1 + slideEls.length) % slideEls.length;
+            showSlide(current);
+        });
+
+        nextBtn.addEventListener('click', () => {
+            current = (current + 1) % slideEls.length;
+            showSlide(current);
+        });
+
+    } catch (error) {
+        console.error('❌ [ERROR] renderHallOfFame failed:', error);
+        col.innerHTML = `
+            <div class="section-title">👑 HALL OF FAME</div>
+            <div class="gold-underline"></div>
+            <div class="section-subtitle">Error loading champions</div>
+        `;
     }
-}
-
-// Simple slider (if needed for contenders display
-function initSlider() {
-    const slides = document.querySelectorAll(".slide");
-    if (slides.length === 0) return;
-    
-    let current = 0;
-
-    slides.forEach((s, i) => {
-        s.style.display = i === 0 ? "block" : "none";
-    });
-
-    setInterval(() => {
-        slides[current].style.display = "none";
-        current = (current + 1) % slides.length;
-        slides[current].style.display = "block";
-    }, 5000);
 }

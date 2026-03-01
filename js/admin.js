@@ -159,6 +159,17 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     loadAdminInfo();
     showSuperadminUIIfNeeded();
+    
+    // Debug: Ensure overview section is visible
+    setTimeout(() => {
+        const overviewSection = document.getElementById('overview');
+        const overviewNav = document.querySelector('[data-section="overview"]');
+        
+        if (overviewSection && overviewNav) {
+            overviewSection.classList.add('active');
+            overviewNav.classList.add('active');
+        }
+    }, 100);
     setupMobileSidebar();
 });
 
@@ -414,8 +425,6 @@ async function handleAddContender(e) {
     const emailEl = document.getElementById('contenderEmail');
     const email = emailEl ? emailEl.value : '';
 
-    console.log('🔍 Adding contender with data:', { name, contenderClass, country, email, description });
-
     if (!eventId) {
         showMessage('contenderMessage', 'Please select an event!', 'error');
         return;
@@ -460,8 +469,6 @@ async function handleAddContender(e) {
         });
 
         const result = await response.json();
-        
-        console.log('✅ Contender creation result:', result);
         
         if (result.success) {
             messageDiv.innerHTML = '<div class="message success">✅ Contender added successfully!</div>';
@@ -794,7 +801,7 @@ function editContender(id) {
                             if (fallbackResult.success && fallbackResult.data && fallbackResult.data.video) {
                                 updated.video = fallbackResult.data.video;
                                 contender.video = fallbackResult.data.video;
-                                console.log('✅ Video uploaded via backend fallback:', fallbackResult.data.video);
+                                
                             }
                         } catch (fallbackErr) {
                             console.error('Backend video upload fallback also failed:', fallbackErr);
@@ -818,7 +825,7 @@ function editContender(id) {
                         if (fallbackResult.success && fallbackResult.data && fallbackResult.data.video) {
                             updated.video = fallbackResult.data.video;
                             contender.video = fallbackResult.data.video;
-                            console.log('✅ Video uploaded via backend:', fallbackResult.data.video);
+                            
                         } else {
                             throw new Error(fallbackResult.error || 'Backend upload failed');
                         }
@@ -833,7 +840,7 @@ function editContender(id) {
             // NOW update the database with picture/video URLs if they were uploaded
             if (updated.picture || updated.video) {
                 try {
-                    console.log('📤 Sending PUT request to save media URLs:', updated);
+                    
                     const updateRes = await fetch(eventId ? `${API_BASE_URL}/events/${eventId}/contenders/${id}` : `${API_BASE_URL}/contenders/${id}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -843,7 +850,7 @@ function editContender(id) {
                     if (!updateResult.success) {
                         console.warn('❌ Failed to save media URLs to database:', updateResult.error);
                     } else {
-                        console.log('✅ Media URLs saved to database:', updateResult.data);
+                        
                     }
                 } catch (err) {
                     console.error('❌ Error updating media URLs in database:', err);
@@ -861,12 +868,12 @@ function editContender(id) {
                 if (fetchResult.success && Array.isArray(fetchResult.data)) {
                     const freshContender = fetchResult.data.find(c => c.id === id);
                     if (freshContender) {
-                        console.log('🔄 Fresh contender from DB:', freshContender);
+                        
                         // Update the local copy with fresh data from DB (includes stored picture/video URLs)
                         const idx = dashboardState.contenders.findIndex(c => c.id === id);
                         if (idx !== -1) {
                             dashboardState.contenders[idx] = { ...dashboardState.contenders[idx], ...freshContender };
-                            console.log('✅ Updated dashboardState.contenders[' + idx + ']:', dashboardState.contenders[idx]);
+                            
                         }
                     } else {
                         console.warn('⚠️ Fresh contender not found in API response');
@@ -950,33 +957,23 @@ function escapeHtml(text) {
 
 async function loadEvents() {
     const token = localStorage.getItem('adminToken');
-    console.log('🔧 DEBUG: Frontend loadEvents started');
-    console.log('🔧 DEBUG: Token exists:', !!token);
     
     try {
-        console.log('🔧 DEBUG: Fetching events from:', `${API_BASE_URL}/events`);
         const response = await fetch(`${API_BASE_URL}/events`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
         });
         
-        console.log('🔧 DEBUG: Events response status:', response.status);
         const result = await response.json();
-        
-        console.log('🔧 DEBUG: Events response data:', result);
 
         if (result.success) {
             const events = result.data;
-            console.log('🔧 DEBUG: Events array:', events);
             
             // Display current/most recent event
             if (events.length > 0) {
                 const currentEvent = events.find(e => e.status === 'open') || events[0];
-                console.log('🔧 DEBUG: Selected current event:', currentEvent);
                 displayCurrentEvent(currentEvent);
-            } else {
-                console.log('🔧 DEBUG: No events found');
             }
 
             // Display all events list
@@ -985,10 +982,10 @@ async function loadEvents() {
             // Populate event select dropdowns
             populateEventSelects();
         } else {
-            console.error('🔧 DEBUG: Events API returned error:', result);
+            console.error('Events API returned error:', result);
         }
     } catch (error) {
-        console.error('🔧 DEBUG: Frontend loadEvents error:', error);
+        console.error('Frontend loadEvents error:', error);
     }
 }
 
@@ -1083,20 +1080,13 @@ window.rejectRequest = async function(requestId) {
 }
 
 function displayCurrentEvent(event) {
-    console.log('🔧 DEBUG: displayCurrentEvent called with:', event);
-    
     const card = document.getElementById('currentEventCard');
     const actions = document.getElementById('eventActionButtons');
-    
-    console.log('🔧 DEBUG: Found elements:', { card: !!card, actions: !!actions });
-    console.log('🔧 DEBUG: Card classes before:', card ? card.className : 'not found');
     
     // Force remove hidden class and make sure card is visible
     if (card) {
         card.classList.remove('hidden');
         card.style.display = 'block';
-        console.log('🔧 DEBUG: Card classes after:', card.className);
-        console.log('🔧 DEBUG: Card display style:', card.style.display);
     }
     
     document.getElementById('currentEventName').textContent = event.name;
@@ -1106,18 +1096,14 @@ function displayCurrentEvent(event) {
                        event.status === 'open' ? '🎪 Event Open' :
                        event.status === 'closed' ? '🔒 Closed' : '📝 Draft';
     
-    console.log('🔧 DEBUG: Event status:', event.status, 'Status text:', statusText);
-    
     document.getElementById('currentEventStatus').textContent = statusText;
     document.getElementById('currentEventStatus').className = `event-status-badge ${event.status}`;
     
     // Generate action buttons based on status
     if (actions) {
         actions.innerHTML = '';
-        console.log('🔧 DEBUG: Generating buttons for status:', event.status);
         
         if (event.status === 'draft') {
-            console.log('🔧 DEBUG: Adding draft status buttons');
             actions.innerHTML = `
                 <button class="btn btn-success" onclick="openEvent('${event.id}')">
                     ✨ Open for Voting
@@ -1127,21 +1113,18 @@ function displayCurrentEvent(event) {
                 </button>
             `;
         } else if (event.status === 'open') {
-            console.log('🔧 DEBUG: Adding open status buttons');
             actions.innerHTML = `
                 <button class="btn btn-warning" onclick="closeEvent('${event.id}')">
                     🔒 Close Event
                 </button>
             `;
         } else if (event.status === 'closed') {
-            console.log('🔧 DEBUG: Adding closed status buttons');
             actions.innerHTML = `
                 <button class="btn btn-primary" onclick="showWinnerSelect('${event.id}')">
                     🎯 Announce Winner
                 </button>
             `;
         } else if (event.status === 'winner_announced') {
-            console.log('🔧 DEBUG: Adding winner_announced status buttons');
             actions.innerHTML = `
                 <button class="btn btn-info" onclick="window.location.href='results.html'">
                     📊 View Results
@@ -1154,95 +1137,7 @@ function displayCurrentEvent(event) {
                 </button>
             `;
         }
-        
-        console.log('🔧 DEBUG: Final actions HTML:', actions.innerHTML);
-        console.log('🔧 DEBUG: Actions container classes:', actions.className);
-        console.log('🔧 DEBUG: Actions container style:', actions.style.cssText);
-    } else {
-        console.error('🔧 DEBUG: Actions container not found!');
     }
-    
-    // Add a temporary visual indicator for debugging
-    setTimeout(() => {
-        const visibleCard = document.getElementById('currentEventCard');
-        if (visibleCard && visibleCard.offsetParent === null) {
-            console.error('🔧 DEBUG: Event card is still hidden! Applying emergency fix...');
-            // Force it to be visible with multiple approaches
-            visibleCard.style.display = 'block';
-            visibleCard.style.visibility = 'visible';
-            visibleCard.style.opacity = '1';
-            visibleCard.style.position = 'static';
-            visibleCard.style.width = 'auto';
-            visibleCard.style.height = 'auto';
-            visibleCard.classList.remove('hidden');
-            visibleCard.classList.add('visible');
-            
-            // Also check if parent is hidden
-            let parent = visibleCard.parentElement;
-            while (parent && parent.offsetParent === null) {
-                console.log('🔧 DEBUG: Parent element also hidden:', parent);
-                parent.style.display = 'block';
-                parent.style.visibility = 'visible';
-                parent = parent.parentElement;
-            }
-        } else {
-            console.log('🔧 DEBUG: Event card is visible!');
-        }
-    }, 100);
-}
-
-function displayEventsList(events) {
-    const list = document.getElementById('eventsList');
-    
-    if (events.length === 0) {
-        list.innerHTML = '<p class="empty-state">No events created yet</p>';
-        return;
-    }
-    
-    list.innerHTML = events.map(event => {
-        let actionButtons = '';
-        
-        // Generate buttons based on event status
-        if (event.status === 'draft') {
-            actionButtons = `
-                <button class="btn btn-success" onclick="openEvent('${event.id}')">✨ Open Event</button>
-                <button class="btn btn-danger" onclick="deleteEvent('${event.id}')">🗑️ Delete</button>
-            `;
-        } else if (event.status === 'open') {
-            actionButtons = `
-                <button class="btn btn-warning" onclick="closeEvent('${event.id}')">🔒 Close Event</button>
-            `;
-        } else if (event.status === 'closed') {
-            actionButtons = `
-                <button class="btn btn-primary" onclick="showWinnerSelect('${event.id}')">🎯 Announce Winner</button>
-            `;
-        } else if (event.status === 'winner_announced') {
-            actionButtons = `
-                <button class="btn btn-danger" onclick="deleteEvent('${event.id}')">🗑️ Delete</button>
-            `;
-        }
-        
-        return `
-            <div class="event-item">
-                <div class="event-item-info">
-                    <h4>${event.name}</h4>
-                    <p>${event.description}</p>
-                    <span class="event-status-badge ${event.status}">
-                        ${event.status === 'winner_announced' ? '🎉 Winner Announced' :
-                          event.status === 'open' ? '🎪 Open' :
-                          event.status === 'closed' ? '🔒 Closed' : '📝 Draft'}
-                    </span>
-                </div>
-                <div class="event-item-meta">
-                    <p>Total Votes: <strong>${event.totalVotes || 0}</strong></p>
-                    ${event.winnerId ? `<p>Winner: <strong>${event.winnerId}</strong></p>` : ''}
-                </div>
-                <div class="event-item-actions">
-                    ${actionButtons}
-                </div>
-            </div>
-        `;
-    }).join('');
 }
 
 async function handleCreateEvent(e) {
@@ -2081,7 +1976,7 @@ async function loadPointRanking() {
                     voteRecords = (voteResult.success && Array.isArray(voteResult.data)) ? voteResult.data : [];
                 } catch (err) {
                     // If votes endpoint doesn't exist, we'll skip vote records
-                    console.log('Vote records endpoint not available, skipping...');
+                    
                 }
 
                 // Fetch all point tables for this event to get titles
@@ -3331,7 +3226,7 @@ function unhighlight(e) {
 
 // Resend Contender Email
 async function resendContenderEmail(contenderId) {
-    console.log('🔧 DEBUG: resendContenderEmail called with ID:', contenderId);
+    
     
     if (!confirm('Are you sure you want to resend an email to this contender?')) return;
     
@@ -3344,8 +3239,8 @@ async function resendContenderEmail(contenderId) {
         event.target.disabled = true;
         
         const apiUrl = `${API_BASE_URL}/admin/contenders/${contenderId}/resend-email`;
-        console.log('🔧 DEBUG: Calling API URL:', apiUrl);
-        console.log('🔧 DEBUG: API_BASE_URL:', API_BASE_URL);
+        
+        
         
         const response = await fetch(apiUrl, {
             method: 'POST',
@@ -3355,15 +3250,15 @@ async function resendContenderEmail(contenderId) {
             }
         });
         
-        console.log('🔧 DEBUG: Response status:', response.status);
-        console.log('🔧 DEBUG: Response ok:', response.ok);
+        
+        
         
         const result = await response.json();
-        console.log('🔧 DEBUG: Response data:', result);
+        
         
         if (result.success) {
             alert('✅ Email sent to contender successfully!');
-            console.log('Email sent:', result.data);
+            
         } else {
             alert('❌ Error sending email: ' + (result.error || result.message || 'Unknown error'));
             console.error('Email send error:', result);
@@ -3403,7 +3298,7 @@ async function resendHallOfFameEmail(entryId) {
         
         if (result.success) {
             alert('✅ Hall of Fame email sent successfully!');
-            console.log('Email sent:', result.data);
+            
         } else {
             alert('❌ Error sending email: ' + (result.error || result.message || 'Unknown error'));
             console.error('Email send error:', result);
@@ -3419,4 +3314,4 @@ async function resendHallOfFameEmail(entryId) {
     }
 }
 
-console.log('Modern Admin Dashboard loaded!');
+

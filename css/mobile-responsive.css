@@ -1833,3 +1833,706 @@ input[type="url"] {
         font-size: 0.8rem;
     }
 }
+
+/* ===== NEW CONTENDER CARD UI MOBILE RESPONSIVENESS ===== */
+
+/* 1. Make contender grid mobile friendly */
+@media (max-width: 768px) {
+    .contenders-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .contenders-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+}
+
+/* 2. Resize contender cards for mobile */
+@media (max-width: 768px) {
+    .contender-card {
+        min-height: auto;
+        padding-bottom: 8px;
+        border-radius: 12px;
+    }
+
+    .contender-image {
+        aspect-ratio: 4 / 5;
+        padding: 6px;
+    }
+
+    .contender-image img {
+        max-height: 200px;
+        border-radius: 8px;
+    }
+
+    .contender-name {
+        font-size: 14px;
+        margin-bottom: 4px;
+    }
+
+    .contender-info {
+        padding: 8px 10px;
+    }
+
+    .view-btn {
+        padding: 6px;
+        font-size: 11px;
+        margin-top: 6px;
+    }
+
+    .meta-tag {
+        font-size: 9px;
+        padding: 2px 6px;
+    }
+
+    .contender-description {
+        font-size: 12px;
+        margin-bottom: 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    .contender-card {
+        min-height: auto;
+        padding-bottom: 6px;
+        border-radius: 10px;
+    }
+
+    .contender-image {
+        aspect-ratio: 4 / 5;
+        padding: 4px;
+    }
+
+    .contender-image img {
+        max-height: 160px;
+        border-radius: 6px;
+    }
+
+    .contender-name {
+        font-size: 13px;
+    }
+
+    .contender-info {
+        padding: 6px 8px;
+    }
+
+    .view-btn {
+        padding: 5px;
+        font-size: 10px;
+    }
+
+    .meta-tag {
+        font-size: 8px;
+        padding: 2px 5px;
+    }
+
+    .contender-description {
+        font-size: 11px;
+    }
+}
+
+/* 3. Resize ranking badge for mobile */
+@media (max-width: 768px) {
+    .rank-badge {
+        width: 24px;
+        height: 24px;
+        font-size: 10px;
+        top: 6px;
+        left: 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    .rank-badge {
+        width: 22px;
+        height: 22px;
+        font-size: 9px;
+        top: 5px;
+        left: 5px;
+    }
+}
+
+/* 4. Resize vote badge for mobile */
+@media (max-width: 768px) {
+    .contender-votes-badge {
+        font-size: 10px;
+        padding: 3px 8px;
+        top: 6px;
+        right: 6px;
+        border-radius: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .contender-votes-badge {
+        font-size: 9px;
+        padding: 2px 6px;
+        top: 5px;
+        right: 5px;
+        border-radius: 14px;
+    }
+}
+
+/* 5. Adjust vote bar spacing */
+@media (max-width: 768px) {
+    .vote-bar {
+        height: 5px;
+        margin-top: 6px;
+        border-radius: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .vote-bar {
+        height: 4px;
+        margin-top: 5px;
+        border-radius: 14px;
+    }
+}
+
+/* 6. Reduce modal size for phones */
+@media (max-width: 768px) {
+    .modal-overlay .modal-content {
+        width: 95%;
+        max-height: 90vh;
+        border-radius: 12px;
+    }
+
+    .modal-overlay .modal-header {
+        height: 220px;
+    }
+
+    .modal-overlay .modal-body {
+        padding: 20px;
+    }
+
+    .modal-overlay .modal-body h2 {
+        font-size: 24px;
+    }
+}
+
+@media (max-width: 480px) {
+    .modal-overlay .modal-content {
+        width: 98%;
+        max-height: 92vh;
+        border-radius: 10px;
+    }
+
+    .modal-overlay .modal-header {
+        height: 180px;
+    }
+
+    .modal-overlay .modal-body {
+        padding: 16px;
+    }
+
+    .modal-overlay .modal-body h2 {
+        font-size: 20px;
+    }
+
+    .modal-overlay .modal-meta-item {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+
+    .modal-overlay .modal-description {
+        font-size: 14px;
+    }
+
+    .modal-overlay .vote-btn {
+        padding: 12px;
+        font-size: 14px;
+    }
+}
+
+/* 7. Ensure navbar remains clean on mobile */
+@media (max-width: 768px) {
+    .navbar-nav.active {
+        transform: translateX(0);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+
+    .navbar-nav {
+        position: fixed;
+        top: 0;
+        right: -100%;
+        width: 280px;
+        height: 100vh;
+        background: white;
+        transition: right 0.3s ease;
+        z-index: 1000;
+        flex-direction: column;
+        padding: 20px;
+        box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+    }
+
+    .navbar-nav a {
+        color: #333;
+        padding: 15px 0;
+        border-bottom: 1px solid #eee;
+        text-decoration: none;
+        font-weight: 500;
+        transition: background 0.2s ease;
+    }
+
+    .navbar-nav a:hover {
+        background: #f8f9fa;
+        color: #667eea;
+    }
+
+    .navbar-nav a.admin-link {
+        background: #e74c3c;
+        color: white;
+        border-radius: 8px;
+        text-align: center;
+        margin-top: 10px;
+    }
+
+    .navbar-nav a.admin-link:hover {
+        background: #c0392b;
+        color: white;
+    }
+
+    .mobile-menu-toggle {
+        display: block;
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1001;
+        background: white;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 15px;
+        font-size: 18px;
+        cursor: pointer;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        transition: all 0.2s ease;
+    }
+
+    .mobile-menu-toggle:hover {
+        background: #f8f9fa;
+        transform: scale(1.05);
+    }
+}
+
+@media (max-width: 480px) {
+    .navbar-nav {
+        width: 250px;
+        padding: 15px;
+    }
+
+    .navbar-nav a {
+        padding: 12px 0;
+        font-size: 14px;
+    }
+
+    .mobile-menu-toggle {
+        top: 15px;
+        right: 15px;
+        padding: 8px 12px;
+        font-size: 16px;
+    }
+}
+
+/* 8. Ensure top 3 highlights work on mobile */
+@media (max-width: 768px) {
+    .top-1,
+    .top-2,
+    .top-3 {
+        border-width: 1.5px;
+    }
+
+    .top-1 {
+        box-shadow: 0 0 10px rgba(255,215,0,0.3);
+    }
+}
+
+@media (max-width: 480px) {
+    .top-1,
+    .top-2,
+    .top-3 {
+        border-width: 1px;
+    }
+
+    .top-1 {
+        box-shadow: 0 0 8px rgba(255,215,0,0.25);
+    }
+}
+
+/* 9. Contender header adjustments for mobile */
+@media (max-width: 768px) {
+    .contenders-header {
+        margin-bottom: 40px;
+        text-align: center;
+    }
+
+    .contenders-header h1 {
+        font-size: 32px;
+        margin-bottom: 10px;
+    }
+
+    .contenders-header p {
+        font-size: 16px;
+        margin-bottom: 15px;
+    }
+
+    .contenders-header button {
+        padding: 8px 16px;
+        font-size: 14px;
+        margin-top: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .contenders-header {
+        margin-bottom: 30px;
+        padding: 0 5px;
+    }
+
+    .contenders-header h1 {
+        font-size: 28px;
+    }
+
+    .contenders-header p {
+        font-size: 14px;
+    }
+
+    .contenders-header button {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+}
+
+/* 10. Event grouping headers mobile responsive */
+@media (max-width: 768px) {
+    .contenders-grid ~ div > div:first-child {
+        padding: 12px 15px;
+        margin-bottom: 15px;
+        border-radius: 8px;
+    }
+
+    .contenders-grid ~ div > div:first-child h3 {
+        font-size: 18px;
+        margin-bottom: 5px;
+    }
+
+    .contenders-grid ~ div > div:first-child p {
+        font-size: 13px;
+        margin-bottom: 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .contenders-grid ~ div > div:first-child {
+        padding: 10px 12px;
+        margin-bottom: 12px;
+        border-radius: 6px;
+    }
+
+    .contenders-grid ~ div > div:first-child h3 {
+        font-size: 16px;
+    }
+
+    .contenders-grid ~ div > div:first-child p {
+        font-size: 12px;
+    }
+}
+
+/* 11. Prevent overflow and ensure smooth scrolling */
+@media (max-width: 768px) {
+    .contenders-grid {
+        overflow-x: hidden;
+        width: 100%;
+    }
+
+    .contender-card {
+        max-width: 100%;
+        overflow: hidden;
+    }
+
+    .contender-image {
+        overflow: hidden;
+    }
+
+    .contender-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        border-radius: 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        overflow-x: hidden;
+        padding: 0 8px;
+    }
+
+    .contenders-grid {
+        overflow-x: hidden;
+    }
+
+    .contender-image img {
+        border-radius: 6px;
+    }
+}
+
+/* 12. Touch-friendly interactions for mobile */
+@media (max-width: 768px) {
+    .contender-card {
+        cursor: pointer;
+        -webkit-tap-highlight-color: rgba(102, 126, 234, 0.1);
+    }
+
+    .contender-card:active {
+        transform: translateY(-2px);
+        transition: transform 0.1s ease;
+    }
+
+    .view-btn {
+        -webkit-tap-highlight-color: rgba(102, 126, 234, 0.2);
+    }
+
+    .view-btn:active {
+        transform: scale(0.98);
+        transition: transform 0.1s ease;
+    }
+}
+
+/* 13. Ensure proper spacing between event groups on mobile */
+@media (max-width: 768px) {
+    .contenders-grid ~ div {
+        margin-bottom: 30px;
+    }
+}
+
+@media (max-width: 480px) {
+    .contenders-grid ~ div {
+        margin-bottom: 25px;
+    }
+}
+
+/* ===== GLOBAL IMAGE SYSTEM MOBILE EXTENSIONS ===== */
+
+/* 1. Global card image container mobile support */
+@media (max-width: 768px) {
+    .card-image-container {
+        aspect-ratio: 3 / 4;
+        padding: 6px;
+        border-radius: 10px;
+    }
+
+    .card-image-container img {
+        max-height: 200px;
+        border-radius: 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    .card-image-container {
+        aspect-ratio: 3 / 4;
+        padding: 4px;
+        border-radius: 8px;
+    }
+
+    .card-image-container img {
+        max-height: 160px;
+        border-radius: 4px;
+    }
+}
+
+/* 2. Global card layout mobile support */
+@media (max-width: 768px) {
+    .card,
+    .contender-card,
+    .vote-card,
+    .result-card,
+    .admin-card {
+        border-radius: 12px;
+        margin-bottom: 0.6rem;
+    }
+    
+    .card:hover,
+    .contender-card:hover,
+    .vote-card:hover,
+    .result-card:hover,
+    .admin-card:hover {
+        transform: translateY(-2px);
+    }
+
+    .card-content,
+    .contender-info,
+    .vote-info,
+    .result-info,
+    .admin-info {
+        padding: 8px 10px;
+    }
+
+    .grid-layout,
+    .contenders-grid,
+    .votes-grid,
+    .results-grid,
+    .admin-grid {
+        gap: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .card,
+    .contender-card,
+    .vote-card,
+    .result-card,
+    .admin-card {
+        border-radius: 10px;
+        margin-bottom: 0.5rem;
+    }
+
+    .card-content,
+    .contender-info,
+    .vote-info,
+    .result-info,
+    .admin-info {
+        padding: 6px 8px;
+    }
+
+    .grid-layout,
+    .contenders-grid,
+    .votes-grid,
+    .results-grid,
+    .admin-grid {
+        gap: 10px;
+    }
+}
+
+/* 3. Fallback image classes mobile support */
+@media (max-width: 768px) {
+    img.card-image,
+    img.contender-image,
+    img.vote-image,
+    img.result-image,
+    img.admin-image {
+        max-height: 200px;
+        border-radius: 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    img.card-image,
+    img.contender-image,
+    img.vote-image,
+    img.result-image,
+    img.admin-image {
+        max-height: 160px;
+        border-radius: 4px;
+    }
+}
+
+/* 4. Ensure global image system works with existing contender styles */
+@media (max-width: 768px) {
+    .contender-image {
+        aspect-ratio: 3 / 4;
+        padding: 6px;
+    }
+
+    .contender-image img {
+        max-height: 200px;
+        border-radius: 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    .contender-image {
+        aspect-ratio: 3 / 4;
+        padding: 4px;
+    }
+
+    .contender-image img {
+        max-height: 160px;
+        border-radius: 4px;
+    }
+}
+
+/* 5. Touch-friendly interactions for global cards */
+@media (max-width: 768px) {
+    .card,
+    .contender-card,
+    .vote-card,
+    .result-card,
+    .admin-card {
+        cursor: pointer;
+        -webkit-tap-highlight-color: rgba(102, 126, 234, 0.1);
+    }
+
+    .card:active,
+    .contender-card:active,
+    .vote-card:active,
+    .result-card:active,
+    .admin-card:active {
+        transform: translateY(-2px);
+        transition: transform 0.1s ease;
+    }
+
+    .card-image-container {
+        -webkit-tap-highlight-color: rgba(102, 126, 234, 0.1);
+    }
+
+    .card-image-container:active {
+        transform: scale(0.98);
+        transition: transform 0.1s ease;
+    }
+}
+
+/* 6. Prevent overflow for global image system */
+@media (max-width: 768px) {
+    .grid-layout,
+    .contenders-grid,
+    .votes-grid,
+    .results-grid,
+    .admin-grid {
+        overflow-x: hidden;
+        width: 100%;
+    }
+
+    .card,
+    .contender-card,
+    .vote-card,
+    .result-card,
+    .admin-card {
+        max-width: 100%;
+        overflow: hidden;
+    }
+
+    .card-image-container {
+        overflow: hidden;
+    }
+
+    .card-image-container img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        border-radius: 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        overflow-x: hidden;
+        padding: 0 8px;
+    }
+
+    .grid-layout,
+    .contenders-grid,
+    .votes-grid,
+    .results-grid,
+    .admin-grid {
+        overflow-x: hidden;
+    }
+
+    .card-image-container img {
+        border-radius: 4px;
+    }
+}

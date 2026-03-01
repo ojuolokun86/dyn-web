@@ -117,4 +117,4 @@ function escapeHtml(text) {
     return text.replace(/[&<>"']/g, m => map[m]);
 }
 
-console.log('Admin Registration page loaded');
+

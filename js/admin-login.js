@@ -74,7 +74,7 @@ async function handleLogin(e) {
         
         // For development: allow demo login if backend is not available
         if (username === 'admin' && password === 'admin123') {
-            console.log('Using demo login (backend not available)');
+            ');
             const demoToken = generateDemoToken();
             localStorage.setItem('adminToken', demoToken);
             localStorage.setItem('adminUser', JSON.stringify({
@@ -127,4 +127,4 @@ function generateDemoToken() {
     return 'demo_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 }
 
-console.log('Admin Login page loaded');
+
