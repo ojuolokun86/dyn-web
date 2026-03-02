@@ -8,7 +8,8 @@
  *   <script src="js/api-config.js"></script>
  *   // Access as: window.API_BASE_URL, window.isBackendRunning()
  */
-const url = 'https://dyn.fly.dev';
+const url = 'http://localhost:5000'
+//'https://dyn.fly.dev';
 
 const API_BASE_URL = `${url}/api`;
 const BACKEND_URL = url;
