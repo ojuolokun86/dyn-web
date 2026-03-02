@@ -94,7 +94,7 @@
             cursor: pointer;
             border: 2px solid transparent;
             position: relative;
-            height: 420px;
+            /* allow height to grow based on image/text instead of forcing 420px */
             display: flex;
             flex-direction: column;
         }
@@ -120,7 +120,8 @@
 
         .vote-card-image {
             width: 100%;
-            height: 200px;
+            /* give a consistent aspect ratio so every card is the same height */
+            aspect-ratio: 4 / 3;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: flex;
             align-items: center;
@@ -141,14 +142,12 @@
         }
 
         .vote-card-image img {
+            /* fill parent box but show entire picture (letterboxed if necessary) */
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
+            display: block;
             transition: transform 0.3s ease;
-            z-index: 0;
-            position: absolute;
-            top: 0;
-            left: 0;
         }
 
         .contender-vote-card:hover .vote-card-image img {
@@ -489,10 +488,6 @@
                     </button>
 
                     <div id="voteMessage"></div>
-
-                .vote-header h1 {
-                    font-size: 36px;
-                }
                 </div>
             </aside>
         </div>

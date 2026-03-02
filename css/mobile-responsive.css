@@ -21,7 +21,8 @@ body {
     position: fixed;
     right: 1rem;
     top: 1rem;
-    z-index: 10000;
+    /* ensure the toggle stays above everything */
+    z-index: 10001;
     background: #667eea;
     color: #fff;
     border: none;
@@ -56,14 +57,20 @@ body {
 }
 
 @media (max-width: 768px) {
+    /* ensure header is the containing block for the dropdown */
+    .header {
+        position: relative; /* allows nav to position itself just beneath */
+        z-index: 1000;
+    }
+
     /* Navbar mobile dropdown */
     .mobile-menu-toggle {
         display: block;
     }
     .navbar-nav {
         display: none;
-        position: absolute;
-        top: 100%;
+        position: absolute; /* now relative to .header above */
+        top: 100%; /* immediately below header height */
         left: 0;
         right: 0;
         background: #fff;
