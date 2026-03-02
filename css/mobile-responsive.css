@@ -1049,7 +1049,7 @@ input[type="url"] {
 
 @media (max-width: 768px) {
     .hero {
-        min-height: 50vh;
+        min-height: 60vh;
         padding: 1.5rem 0.8rem;
     }
     
@@ -1060,12 +1060,47 @@ input[type="url"] {
     .hero-content p {
         font-size: 0.9rem;
     }
+
+    /* stacked home column layout */
+    .home-three-container {
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+        padding: 20px;
+        width: 100%;
+        max-width: 100%;
+        overflow: visible;
+    }
+
+    .home-column {
+        width: 100%;
+        max-width: 100%;
+        order: inherit;
+        overflow: visible;
+    }
+
+    .home-col-upcoming { order: 1; }
+    .home-col-past { order: 2; }
+    .home-col-hof { order: 3; }
+
+    .past-winner-display {
+        max-width: 480px;
+        width: 100%;
+        margin: 0 auto;
+    }
+
+    /* transferred from style.css */
+    .section-title { font-size: 1.4rem; }
+    .winner-name-main { font-size: 2rem; }
+    .hof-slide { height: 260px; }
+    .hof-nav { width: 30px; height: 30px; font-size: 14px; }
 }
 
 @media (max-width: 480px) {
     .hero {
         min-height: 40vh;
         padding: 1rem 0.5rem;
+        height: 30vh; /* further reduce for smallest screens */
     }
     
     .hero-button {
@@ -1078,6 +1113,12 @@ input[type="url"] {
     
     .hero-content p {
         font-size: 0.8rem;
+    }
+
+    .home-three-container {
+        gap: 12px;
+        padding: 0 0.5rem;
+        margin: 8px auto 24px auto;
     }
 
     /* upcoming event full width on tiny devices */

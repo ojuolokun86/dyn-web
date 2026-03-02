@@ -305,93 +305,10 @@ footer {
     min-width: 0; /* Prevent flex items from overflowing */
 }
 
-/* Responsive breakpoints */
-@media (max-width: 1024px) {
-    .home-three-container {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 20px;
-        padding: 0 1rem;
-}
-}
-
-@media (max-width: 768px) {
-/* ===== PREMIUM MOBILE STACKED LAYOUT ===== */
-.home-three-container {
-display: flex;
-flex-direction: column;
-gap: 30px;
-padding: 20px;
-width: 100%;
-max-width: 100%;
-overflow: visible;
-}
-    
-.home-column {
-width: 100%;
-max-width: 100%;
-order: inherit;
-overflow: visible;
-}
-    
-/* Visual order for mobile stacking */
-.home-col-upcoming { order: 1; }
-.home-col-past { order: 2; }
-.home-col-hof { order: 3; }
-    
-/* Hero section mobile optimization */
-.hero {
-min-height: 60vh;
-position: relative;
-display: flex;
-align-items: center;
-justify-content: center;
-text-align: center;
-overflow: hidden;
-}
-    
-.hero-content {
-text-align: center;
-max-width: 90%;
-}
-    
-.hero-content h1 {
-font-size: 2.2rem;
-margin-bottom: 1rem;
-text-shadow: 0 4px 12px rgba(0,0,0,0.5);
-}
-    
-.hero-content p {
-font-size: 1rem;
-margin-bottom: 1.5rem;
-max-width: 100%;
-text-shadow: 0 2px 8px rgba(0,0,0,0.5);
-}
-
-}
-
-@media (max-width: 480px) {
-    /* Further reduce hero for tiny screens */
-    .hero {
-        height: 30vh;
-    }
-    
-    .home-three-container {
-        gap: 12px;
-        padding: 0 0.5rem;
-        margin: 8px auto 24px auto;
-    }
-} /* Ensure the past-winner card centers in its column */
-.past-winner-display { 
-    max-width: 480px; 
-    width: 100%; 
-    margin: 0 auto;
-}
+/* Responsive breakpoints */ 
 /* ... */
 
-/* Card ordering for responsive layout */
-.home-col-hof { order: 3; }
-.home-col-past { order: 2; }
-.home-col-upcoming { order: 1; }
+
 .hof-slides { position: relative; }
 .hof-slide {
     display: none;
@@ -417,11 +334,7 @@ text-shadow: 0 2px 8px rgba(0,0,0,0.5);
 .hof-player-name { font-size: 1.55rem; font-weight: 800; color: #fff; margin-bottom: 6px; }
 .hof-player-meta { font-size: 0.98rem; color: rgba(255,255,255,0.85); }
 
-@media (max-width: 768px) {
-    .hof-slide { height: 240px; }
-    .hof-team-logo { max-height: 60px; }
-    .pw-slide { height: 240px; }
-}
+
 
 /* Winner banner (placed in upcoming event column) */
 .winner-banner {
@@ -445,10 +358,7 @@ text-shadow: 0 2px 8px rgba(0,0,0,0.5);
 .winner-banner .winner-text { text-align: left; }
 .winner-banner .winner-text strong { color: #ffd700; font-size: 1.05rem; }
 .winner-banner .winner-banner-close { background: transparent; border: none; color: #fff; font-size: 1.1rem; cursor: pointer; }
-@media (max-width: 768px) {
-    .winner-banner-inner { padding: 10px 12px; gap: 8px; }
-    .winner-banner .winner-emoji { font-size: 1.2rem; }
-}
+
 
 /* Event Status Messages */
 .event-closed-message,
@@ -1157,12 +1067,7 @@ text-shadow: 0 2px 8px rgba(0,0,0,0.5);
 }
 
 /* Responsive adjustments */
-@media (max-width: 768px) {
-    .section-title { font-size: 1.4rem; }
-    .winner-name-main { font-size: 2rem; }
-    .hof-slide { height: 260px; }
-    .hof-nav { width: 30px; height: 30px; font-size: 14px; }
-}
+
 .hof-slideshow-container {
     position: relative;
     width: 100%;
@@ -1377,41 +1282,7 @@ text-shadow: 0 2px 8px rgba(0,0,0,0.5);
     height: 14px;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-    .hof-slide-content {
-        padding: 20px;
-    }
-    
-    .hof-images-container {
-        flex-direction: column;
-        gap: 15px;
-    }
-    
-    .hof-winner-image {
-        width: 150px;
-        height: 150px;
-    }
-    
-    .hof-team-logo {
-        width: 110px;
-        height: 110px;
-    }
-    
-    .hof-winner-info h2 {
-        font-size: 1.8em;
-    }
-    
-    .hof-nav-btn {
-        width: 40px;
-        height: 40px;
-        font-size: 1.1em;
-    }
-    
-    .hof-title {
-        font-size: 1.2em;
-    }
-}
+
 
 /* ===== GLOBAL IMAGE DISPLAY SYSTEM ===== */
 
@@ -1521,61 +1392,4 @@ img.admin-image {
     border-color: rgba(102, 126, 234, 0.2);
 }
 
-/* 10. Mobile responsive global image system */
-@media (max-width: 768px) {
-    .card-image-container {
-        aspect-ratio: 3 / 4;
-        padding: 6px;
-        border-radius: 10px;
-    }
 
-    .card-image-container img {
-        max-height: 200px;
-        border-radius: 6px;
-    }
-
-    .card-content,
-    .contender-info,
-    .vote-info,
-    .result-info,
-    .admin-info {
-        padding: 8px 10px;
-    }
-
-    .grid-layout,
-    .contenders-grid,
-    .votes-grid,
-    .results-grid,
-    .admin-grid {
-        gap: 12px;
-    }
-}
-
-@media (max-width: 480px) {
-    .card-image-container {
-        aspect-ratio: 3 / 4;
-        padding: 4px;
-        border-radius: 8px;
-    }
-
-    .card-image-container img {
-        max-height: 160px;
-        border-radius: 4px;
-    }
-
-    .card-content,
-    .contender-info,
-    .vote-info,
-    .result-info,
-    .admin-info {
-        padding: 6px 8px;
-    }
-
-    .grid-layout,
-    .contenders-grid,
-    .votes-grid,
-    .results-grid,
-    .admin-grid {
-        gap: 10px;
-    }
-}
