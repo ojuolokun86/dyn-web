@@ -2284,16 +2284,6 @@ input[type="url"] {
         overflow: hidden;
     }
 
-    /* ensure the three-column home layout never produces horizontal scroll */
-    .home-three-container {
-        padding: 0 0.5rem;
-        box-sizing: border-box;
-    }
-    .home-column {
-        width: 100%;
-        padding: 0;
-    }
-
     .contender-image img {
         width: 100%;
         height: 100%;
