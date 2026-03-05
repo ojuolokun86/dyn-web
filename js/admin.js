@@ -2994,28 +2994,36 @@ document.addEventListener('DOMContentLoaded', function() {
 function setupMobileSidebar() {
     const sidebarToggle = document.getElementById('sidebarToggle');
     const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
     
-    if (sidebarToggle && sidebar) {
+    if (sidebarToggle && sidebar && overlay) {
         sidebarToggle.addEventListener('click', function() {
-            sidebar.classList.toggle('active');
-            sidebarToggle.textContent = sidebar.classList.contains('active') ? '✕' : '☰';
+            const isActive = sidebar.classList.toggle('active');
+            document.body.classList.toggle('sidebar-open', isActive);
+            sidebarToggle.textContent = isActive ? '✕' : '☰';
         });
         
-        // Close sidebar when clicking outside
-        document.addEventListener('click', function(event) {
-            if (!sidebar.contains(event.target) && !sidebarToggle.contains(event.target)) {
+        // Close sidebar when clicking outside or on overlay
+        const closeSidebar = function() {
+            if (sidebar.classList.contains('active')) {
                 sidebar.classList.remove('active');
+                document.body.classList.remove('sidebar-open');
                 sidebarToggle.textContent = '☰';
             }
+        };
+        
+        document.addEventListener('click', function(event) {
+            if (!sidebar.contains(event.target) && !sidebarToggle.contains(event.target)) {
+                closeSidebar();
+            }
         });
+        
+        overlay.addEventListener('click', closeSidebar);
         
         // Close sidebar when clicking on a nav item
         const navItems = sidebar.querySelectorAll('.nav-item');
         navItems.forEach(item => {
-            item.addEventListener('click', function() {
-                sidebar.classList.remove('active');
-                sidebarToggle.textContent = '☰';
-            });
+            item.addEventListener('click', closeSidebar);
         });
     }
 }

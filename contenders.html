@@ -310,6 +310,70 @@
             margin: 20px 0;
         }
 
+        .modal-trophies {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 165, 0, 0.05) 100%);
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .modal-trophies h3 {
+            color: #FFD700;
+            font-size: 18px;
+            margin: 0 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .trophy-count {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            color: #333;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            display: inline-block;
+        }
+
+        .trophy-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .trophy-item {
+            background: white;
+            border-left: 4px solid #FFD700;
+            padding: 12px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .trophy-item-icon {
+            font-size: 20px;
+        }
+
+        .trophy-item-name {
+            color: #333;
+            font-weight: 500;
+        }
+
+        .trophy-item-league {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .no-trophies {
+            color: #999;
+            font-style: italic;
+            padding: 10px;
+        }
+
         .modal-action {
             margin-top: 25px;
             padding-top: 20px;
@@ -489,6 +553,10 @@
                         <span id="modalCountry"></span>
                     </div>
                 </div>
+                <div id="modalTrophies" class="modal-trophies" style="display: none;">
+                    <h3>🏆 Hall of Fame</h3>
+                    <div id="trophyContent"></div>
+                </div>
                 <div class="modal-description" id="modalDescription"></div>
                 <div class="modal-action">
                     <button class="vote-btn" onclick="goToVote()">🗳️ Vote for this Contender</button>
@@ -505,10 +573,48 @@
     <script>
         let currentEvent = null;
         let allContenders = [];
+        let hallOfFameData = null; // Cache for hall of fame data
+
+        // Load hall of fame data
+        async function loadHallOfFameData() {
+            if (hallOfFameData) return; // Use cache if available
+            try {
+                const res = await fetch(`${API_BASE_URL}/admin/hall-of-fame-web`);
+                const result = await res.json();
+                hallOfFameData = result.success ? result.data : {};
+            } catch (err) {
+                console.error('Error loading Hall of Fame data:', err);
+                hallOfFameData = {};
+            }
+        }
+
+        // Get player's trophies from hall of fame
+        function getPlayerTrophies(playerName) {
+            if (!hallOfFameData) return [];
+            
+            const trophies = [];
+            for (const [leagueName, players] of Object.entries(hallOfFameData)) {
+                if (players[playerName]) {
+                    const wins = players[playerName].wins || [];
+                    wins.forEach(win => {
+                        trophies.push({
+                            league: leagueName,
+                            teamName: win.team_name,
+                            teamLogo: win.team_logo,
+                            season: win.season
+                        });
+                    });
+                }
+            }
+            return trophies;
+        }
 
         // Load current event and contenders
         async function loadContenders() {
             try {
+                // Load hall of fame data
+                await loadHallOfFameData();
+
                 // Get all contenders from all active events
                 const contRes = await fetch(`${API_BASE_URL}/events/all-contenders?t=${Date.now()}`);
                 const contResult = await contRes.json();
@@ -617,6 +723,31 @@
             document.getElementById('modalClass').textContent = contender.class || 'N/A';
             document.getElementById('modalCountry').textContent = contender.country || 'N/A';
             document.getElementById('modalDescription').textContent = contender.description || 'No description available';
+
+            // Get and display trophies
+            const trophies = getPlayerTrophies(contender.name);
+            const trophiesDiv = document.getElementById('modalTrophies');
+            const trophyContent = document.getElementById('trophyContent');
+            
+            if (trophies.length > 0) {
+                trophiesDiv.style.display = 'block';
+                trophyContent.innerHTML = `
+                    <div class="trophy-count">🏆 ${trophies.length} Hall of Fame ${trophies.length === 1 ? 'Entry' : 'Entries'}</div>
+                    <div class="trophy-list" style="margin-top: 15px;">
+                        ${trophies.map(trophy => `
+                            <div class="trophy-item">
+                                <span class="trophy-item-icon">🥇</span>
+                                <div>
+                                    <div class="trophy-item-name">${escapeHtml(trophy.teamName)}</div>
+                                    <div class="trophy-item-league">${escapeHtml(trophy.league)} • Season ${trophy.season}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } else {
+                trophiesDiv.style.display = 'none';
+            }
 
             // Store contender ID for voting
             window.selectedContenderId = contenderId;

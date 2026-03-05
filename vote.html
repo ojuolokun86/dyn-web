@@ -66,7 +66,7 @@
 
         .vote-layout {
             display: grid;
-            grid-template-columns: 1fr 380px;
+            grid-template-columns: 1fr;
             gap: 50px;
         }
 
@@ -231,23 +231,67 @@
             box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         }
 
+        .vote-card-button.active {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 2px 8px rgba(255, 255, 255, 0.3);
+        }
+
         .contender-vote-card.selected .vote-card-button {
             background: white;
             color: #667eea;
             box-shadow: 0 2px 8px rgba(255, 255, 255, 0.3);
         }
 
-        /* Right side - Vote Sidebar */
-        .vote-sidebar {
-            position: sticky;
-            top: 30px;
+        /* Vote Panel on Card */
+        .vote-panel {
+            display: none;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            margin-top: 15px;
+            border-radius: 12px;
+            text-align: center;
         }
 
-        .vote-sidebar-card {
+        .vote-panel.active {
+            display: block;
+        }
+
+        .vote-points-display {
+            font-size: 48px;
+            font-weight: bold;
+            color: #FFD700;
+            margin-bottom: 10px;
+        }
+
+        .vote-points-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 15px;
+        }
+
+        .confirm-vote-button {
+            width: 100%;
+            padding: 12px 20px;
             background: white;
-            border-radius: 20px;
-            padding: 35px 30px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+            color: #667eea;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .confirm-vote-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Vote Sidebar - Hidden */
+        .vote-sidebar {
+            display: none;
             margin-bottom: 30px;
         }
 
@@ -470,8 +514,8 @@
                 </div>
             </section>
 
-            <!-- Right: Vote Sidebar -->
-            <aside class="vote-sidebar">
+            <!-- Right: Vote Sidebar - HIDDEN -->
+            <aside class="vote-sidebar" style="display: none;">
                 <div class="vote-sidebar-card">
                     <h3>🗳️ Your Vote</h3>
                     
@@ -484,7 +528,7 @@
                     </div>
 
                     <button class="cast-vote-button" id="castVoteBtn" disabled>
-                        Cast Vote
+                        ✓ Confirm Vote
                     </button>
 
                     <div id="voteMessage"></div>
@@ -596,23 +640,22 @@
             const container = document.getElementById('voteTables');
             
             if (voteTables.length === 0) {
-                container.innerHTML = '<p style="color: #666; font-weight: 500;">No vote tables available</p>';
+                container.innerHTML = '';
                 return;
             }
 
-            container.innerHTML = voteTables.map(vt => `
-                <label>
-                    <input type="radio" name="voteTable" value="${vt.id}" data-points="${vt.points_per_vote}">
-                    <span class="label-text">Vote Table ${vt.table_number} — ${vt.points_per_vote} pts</span>
-                </label>
-            `).join('') + '<div class="vote-tables-note">💡 Higher points = stronger impact on ranking</div>';
-
-            container.querySelectorAll('input[name="voteTable"]').forEach(radio => {
-                radio.addEventListener('change', (e) => {
-                    selectedTableId = e.target.value;
-                    updateCastButtonState();
-                });
-            });
+            // Use first vote table by default
+            const defaultTable = voteTables[0];
+            selectedTableId = defaultTable.id;
+            
+            container.innerHTML = `
+                <div style="text-align: center; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; color: white;">
+                    <div style="font-size: 32px; font-weight: bold; color: #FFD700; margin-bottom: 8px;">${defaultTable.points_per_vote}</div>
+                    <div style="font-size: 14px; opacity: 0.9;">Points to Vote Table</div>
+                </div>
+            `;
+            
+            updateCastButtonState();
         }
 
         async function loadContenders() {
@@ -641,6 +684,8 @@
                 return;
             }
 
+            const defaultVotePoints = voteTables.length > 0 ? voteTables[0].points_per_vote : 0;
+
             grid.innerHTML = contenders.map(c => `
                 <div class="contender-vote-card" data-id="${c.id}">
                     <div class="vote-card-image ${!c.picture ? 'no-image' : ''}">
@@ -653,43 +698,97 @@
                             <span class="vote-meta-tag">${escapeHtml(c.country || '')}</span>
                         </div>
                         <p class="vote-card-description">${escapeHtml(c.description || '')}</p>
-                        <button class="vote-card-button">Select to Vote</button>
+                        <button class="vote-card-button" data-id="${c.id}">Vote</button>
+                        <div class="vote-panel" data-id="${c.id}">
+                            <div class="vote-points-display">${defaultVotePoints}</div>
+                            <div class="vote-points-label">Points to Vote</div>
+                            <button class="confirm-vote-button" data-id="${c.id}">✓ Confirm Vote</button>
+                            <div class="vote-message" style="margin-top: 10px; font-size: 13px;"></div>
+                        </div>
                     </div>
                 </div>
             `).join('');
 
-            grid.querySelectorAll('.contender-vote-card').forEach(card => {
-                card.addEventListener('click', () => selectContender(card.getAttribute('data-id')));
+            // Vote button toggle
+            grid.querySelectorAll('.vote-card-button').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleVotePanel(btn.getAttribute('data-id'));
+                });
+            });
+
+            // Confirm vote buttons on cards
+            grid.querySelectorAll('.confirm-vote-button').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    handleVoteFromCard(btn.getAttribute('data-id'));
+                });
             });
         }
 
-        function selectContender(id) {
-            // Remove previous selection
-            document.querySelectorAll('.contender-vote-card').forEach(c => {
-                c.classList.remove('selected');
+        function toggleVotePanel(id) {
+            const panel = document.querySelector(`.vote-panel[data-id="${id}"]`);
+            const btn = document.querySelector(`.vote-card-button[data-id="${id}"]`);
+            
+            // Close all other panels
+            document.querySelectorAll('.vote-panel.active').forEach(p => {
+                if (p.getAttribute('data-id') !== id) {
+                    p.classList.remove('active');
+                    document.querySelector(`.vote-card-button[data-id="${p.getAttribute('data-id')}"]`).classList.remove('active');
+                    document.querySelector(`.contender-vote-card[data-id="${p.getAttribute('data-id')}"]`).classList.remove('selected');
+                }
             });
-
-            // Add selection to clicked card
-            document.querySelector(`[data-id="${id}"]`).classList.add('selected');
-
-            selectedContenderId = id;
-            const contender = contenders.find(c => c.id === id);
-
-            if (contender) {
-                document.getElementById('selectedDisplay').innerHTML = 
-                    `<span>✓ ${escapeHtml(contender.name)}</span>`;
-            }
-
-            updateCastButtonState();
-            document.getElementById('voteMessage').innerHTML = '';
+            
+            // Toggle current panel
+            panel.classList.toggle('active');
+            btn.classList.toggle('active');
+            document.querySelector(`.contender-vote-card[data-id="${id}"]`).classList.toggle('selected');
         }
 
         function updateCastButtonState() {
             const btn = document.getElementById('castVoteBtn');
             const hasSelection = selectedContenderId !== null;
-            const hasTable = selectedTableId !== null || voteTables.length === 0;
             
-            btn.disabled = !(hasSelection && hasTable);
+            btn.disabled = !hasSelection;
+        }
+
+        // Handle voting from card confirm button
+        async function handleVoteFromCard(contenderId) {
+            const panel = document.querySelector(`.vote-panel[data-id="${contenderId}"]`);
+            const messageDiv = panel.querySelector('.vote-message');
+            messageDiv.innerHTML = '';
+
+            try {
+                messageDiv.innerHTML = '<span class="loading-spinner" style="font-size: 11px;">⏳ Voting...</span>';
+
+                const payload = {
+                    contenderId: contenderId,
+                    voteTableId: selectedTableId || null
+                };
+
+                const res = await fetch(`${API_BASE_URL}/events/${currentEvent.id}/vote`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await res.json();
+
+                if (res.ok && result.success) {
+                    messageDiv.innerHTML = `<span style="color: #40E0D0; font-weight: bold;">✓ Vote counted!</span>`;
+                    
+                    // Close panel after 1.5 seconds
+                    setTimeout(() => {
+                        toggleVotePanel(contenderId);
+                        messageDiv.innerHTML = '';
+                    }, 1500);
+                } else {
+                    messageDiv.innerHTML = `<span style="color: #ff6b6b;">❌ ${result.error || 'Vote failed'}</span>`;
+                }
+            } catch (err) {
+                console.error('Vote error:', err);
+                messageDiv.innerHTML = '<span style="color: #ff6b6b;">❌ Error voting</span>';
+            }
         }
 
         document.getElementById('castVoteBtn').addEventListener('click', handleCastVote);
@@ -700,11 +799,6 @@
 
             if (!selectedContenderId) {
                 messageDiv.innerHTML = '<div class="vote-message error">Please select a contender</div>';
-                return;
-            }
-
-            if (voteTables.length > 0 && !selectedTableId) {
-                messageDiv.innerHTML = '<div class="vote-message error">Please select a vote table</div>';
                 return;
             }
 
@@ -733,7 +827,6 @@
                         selectedTableId = null;
                         document.querySelectorAll('.contender-vote-card').forEach(c => c.classList.remove('selected'));
                         document.getElementById('selectedDisplay').textContent = 'Select a contender to vote';
-                        document.querySelectorAll('input[name="voteTable"]').forEach(r => r.checked = false);
                         updateCastButtonState();
                         messageDiv.innerHTML = '';
                     }, 2000);
