@@ -271,6 +271,46 @@
             margin-bottom: 15px;
         }
 
+        .vote-tables-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .vote-table-option {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .vote-table-option:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 215, 0, 0.5);
+        }
+
+        .vote-table-option.selected {
+            background: rgba(255, 215, 0, 0.2);
+            border-color: #FFD700;
+        }
+
+        .vote-table-option .vote-points-display {
+            font-size: 24px;
+            font-weight: bold;
+            color: #FFD700;
+            margin-bottom: 4px;
+        }
+
+        .vote-table-label {
+            font-size: 11px;
+            opacity: 0.8;
+            color: white;
+        }
+
         .confirm-vote-button {
             width: 100%;
             padding: 12px 20px;
@@ -602,7 +642,9 @@
                 }
 
                 displayEventInfo();
-                await Promise.all([loadVoteTables(), loadContenders()]);
+                // Load vote tables first, then contenders
+                await loadVoteTables();
+                await loadContenders();
             } catch (err) {
                 console.error('Error initializing vote page:', err);
                 document.getElementById('eventInfoSection').innerHTML = 
@@ -684,8 +726,6 @@
                 return;
             }
 
-            const defaultVotePoints = voteTables.length > 0 ? voteTables[0].points_per_vote : 0;
-
             grid.innerHTML = contenders.map(c => `
                 <div class="contender-vote-card" data-id="${c.id}">
                     <div class="vote-card-image ${!c.picture ? 'no-image' : ''}">
@@ -700,9 +740,16 @@
                         <p class="vote-card-description">${escapeHtml(c.description || '')}</p>
                         <button class="vote-card-button" data-id="${c.id}">Vote</button>
                         <div class="vote-panel" data-id="${c.id}">
-                            <div class="vote-points-display">${defaultVotePoints}</div>
-                            <div class="vote-points-label">Points to Vote</div>
-                            <button class="confirm-vote-button" data-id="${c.id}">✓ Confirm Vote</button>
+                            <div class="vote-points-label" style="margin-bottom: 15px; font-weight: bold;">Choose Vote Points:</div>
+                            <div class="vote-tables-grid">
+                                ${voteTables.map(vt => `
+                                    <div class="vote-table-option" data-table-id="${vt.id}" data-points="${vt.points_per_vote}" onclick="selectVoteTable('${c.id}', '${vt.id}')">
+                                        <div class="vote-points-display">${vt.points_per_vote}</div>
+                                        <div class="vote-table-label">Table ${vt.table_number}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <button class="confirm-vote-button" data-id="${c.id}" disabled>✓ Confirm Vote</button>
                             <div class="vote-message" style="margin-top: 10px; font-size: 13px;"></div>
                         </div>
                     </div>
@@ -714,6 +761,16 @@
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     toggleVotePanel(btn.getAttribute('data-id'));
+                });
+            });
+
+            // Vote table selection
+            grid.querySelectorAll('.vote-table-option').forEach(option => {
+                option.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const panel = e.target.closest('.vote-panel');
+                    const contenderId = panel.getAttribute('data-id');
+                    selectVoteTable(contenderId, option.getAttribute('data-table-id'));
                 });
             });
 
@@ -745,6 +802,26 @@
             document.querySelector(`.contender-vote-card[data-id="${id}"]`).classList.toggle('selected');
         }
 
+        function selectVoteTable(contenderId, tableId) {
+            const panel = document.querySelector(`.vote-panel[data-id="${contenderId}"]`);
+            
+            // Remove selection from all options in this panel
+            panel.querySelectorAll('.vote-table-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            
+            // Add selection to clicked option
+            const selectedOption = panel.querySelector(`[data-table-id="${tableId}"]`);
+            selectedOption.classList.add('selected');
+            
+            // Store selected table for this contender
+            panel.setAttribute('data-selected-table', tableId);
+            
+            // Enable confirm button
+            const confirmBtn = panel.querySelector('.confirm-vote-button');
+            confirmBtn.disabled = false;
+        }
+
         function updateCastButtonState() {
             const btn = document.getElementById('castVoteBtn');
             const hasSelection = selectedContenderId !== null;
@@ -758,12 +835,18 @@
             const messageDiv = panel.querySelector('.vote-message');
             messageDiv.innerHTML = '';
 
+            const selectedTableId = panel.getAttribute('data-selected-table');
+            if (!selectedTableId) {
+                messageDiv.innerHTML = '<span style="color: #ff6b6b;">❌ Please select a vote table first</span>';
+                return;
+            }
+
             try {
                 messageDiv.innerHTML = '<span class="loading-spinner" style="font-size: 11px;">⏳ Voting...</span>';
 
                 const payload = {
                     contenderId: contenderId,
-                    voteTableId: selectedTableId || null
+                    voteTableId: selectedTableId
                 };
 
                 const res = await fetch(`${API_BASE_URL}/events/${currentEvent.id}/vote`, {
@@ -781,6 +864,9 @@
                     setTimeout(() => {
                         toggleVotePanel(contenderId);
                         messageDiv.innerHTML = '';
+                        panel.removeAttribute('data-selected-table');
+                        panel.querySelector('.confirm-vote-button').disabled = true;
+                        panel.querySelectorAll('.vote-table-option').forEach(opt => opt.classList.remove('selected'));
                     }, 1500);
                 } else {
                     messageDiv.innerHTML = `<span style="color: #ff6b6b;">❌ ${result.error || 'Vote failed'}</span>`;

@@ -18,7 +18,7 @@ body {
 /* Navbar toggle (hidden on desktop) */
 .mobile-menu-toggle {
     display: none;
-    position: fixed;
+    position: absolute;
     right: 1rem;
     top: 1rem;
     /* ensure the toggle stays above everything */

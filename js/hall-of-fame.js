@@ -107,6 +107,7 @@ function normalizeLeague(name) {
     .toLowerCase()
     .replace(/season\s*\d+/i, '')
     .replace(/\d+$/, '')
+    .replace(/\s+/g, ' ')  // Collapse multiple spaces into one
     .trim()
     .replace(/\b\w/g, l => l.toUpperCase());
 }

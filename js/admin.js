@@ -153,8 +153,8 @@ let dashboardState = {
 };
 
 // Initialize Dashboard
-document.addEventListener('DOMContentLoaded', () => {
-    checkAuthentication();
+document.addEventListener('DOMContentLoaded', async () => {
+    await checkAuthentication();
     loadDashboardData();
     setupEventListeners();
     loadAdminInfo();
@@ -174,11 +174,31 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Check if user is authenticated
-function checkAuthentication() {
+async function checkAuthentication() {
     const token = localStorage.getItem('adminToken');
     if (!token) {
         window.location.href = 'admin-login.html';
         return;
+    }
+    
+    // Validate token with a quick API call
+    try {
+        const response = await authenticatedFetch(`${API_BASE_URL}/events`);
+        if (!response) return; // Redirect happened in authenticatedFetch
+        
+        const result = await response.json();
+        if (!result.success) {
+            // Token exists but API says it's invalid
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminUser');
+            window.location.href = 'admin-login.html';
+        }
+    } catch (error) {
+        // If API call fails, assume token is invalid and redirect
+        console.error('Token validation failed:', error);
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminUser');
+        window.location.href = 'admin-login.html';
     }
 }
 
@@ -303,13 +323,12 @@ function loadDashboardData() {
 
 // Fetch contenders for all events and populate dashboardState.contenders
 async function fetchAllContenders() {
-    const token = localStorage.getItem('adminToken');
     dashboardState.contenders = [];
 
     try {
-        const eventsRes = await fetch(`${API_BASE_URL}/events`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const eventsRes = await authenticatedFetch(`${API_BASE_URL}/events`);
+        if (!eventsRes) return; // Redirect happened
+        
         const eventsResult = await eventsRes.json();
         if (!eventsResult.success) return;
 
@@ -953,26 +972,48 @@ function escapeHtml(text) {
     return text.replace(/[&<>"']/g, m => map[m]);
 }
 
-// ===== EVENT MANAGEMENT =====
-
-async function loadEvents() {
+// Helper function to handle API calls with authentication
+async function authenticatedFetch(url, options = {}) {
     const token = localStorage.getItem('adminToken');
     
+    const defaultOptions = {
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            ...options.headers
+        }
+    };
+    
+    const response = await fetch(url, { ...options, ...defaultOptions });
+    
+    // Check for 401 Unauthorized (expired/invalid token)
+    if (response.status === 401) {
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminUser');
+        window.location.href = 'admin-login.html';
+        return null; // Return null to indicate redirect happened
+    }
+    
+    return response;
+}
+
+async function loadEvents() {
     try {
-        const response = await fetch(`${API_BASE_URL}/events`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
+        console.log('🔍 Admin: Loading events...');
+        const response = await authenticatedFetch(`${API_BASE_URL}/events`);
+        if (!response) return; // Redirect happened
         
+        console.log('🔍 Admin: Events response:', response);
         const result = await response.json();
+        console.log('🔍 Admin: Events data:', result);
 
         if (result.success) {
             const events = result.data;
+            console.log('🔍 Admin: Loaded events count:', events.length);
             
             // Display current/most recent event
             if (events.length > 0) {
                 const currentEvent = events.find(e => e.status === 'open') || events[0];
+                console.log('🔍 Admin: Current event found:', currentEvent);
                 displayCurrentEvent(currentEvent);
             }
 
@@ -2733,6 +2774,7 @@ function normalizeLeague(name) {
         .toLowerCase()
         .replace(/season\s*\d+/i, '')
         .replace(/\d+$/, '')
+        .replace(/\s+/g, ' ')  // Collapse multiple spaces into one
         .trim()
         .replace(/\b\w/g, l => l.toUpperCase()); // Capitalize first letters
 }

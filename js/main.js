@@ -125,12 +125,18 @@ async function loadEvent() {
     if (layout.pastCol._pwInterval) clearInterval(layout.pastCol._pwInterval);
 
     try {
+        console.log('🔍 Home: Loading events from home endpoint...');
         const response = await fetch(`${API_BASE_URL}/events/home`);
+        console.log('🔍 Home: Home events response:', response);
         const result = await response.json();
+        console.log('🔍 Home: Home events data:', result);
 
         let upcomingEvent = null;
         if (result.success && result.data) {
             upcomingEvent = result.data.upcoming;
+            console.log('🔍 Home: Upcoming event found:', upcomingEvent);
+        } else {
+            console.log('🔍 Home: No event data from home endpoint');
         }
 
         // Render columns in strict order with proper targeting:

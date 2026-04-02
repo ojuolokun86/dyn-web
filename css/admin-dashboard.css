@@ -1094,3 +1094,57 @@ body {
         width: 100%;
     }
 }
+
+@media (max-width: 720px) {
+    /* Make admin tables scrollable and fit mobile */
+    .list-view .table-card .table-responsive,
+    .form-card .table-responsive,
+    .analytics-card .table-responsive {
+        overflow-x: auto;
+        width: 100%;
+        -webkit-overflow-scrolling: touch;
+    }
+    .list-view .table-card table,
+    .form-card table,
+    .analytics-card table {
+        min-width: 520px;
+        font-size: 0.92em;
+    }
+    .list-view .table-card thead th,
+    .list-view .table-card tbody td,
+    .form-card thead th,
+    .form-card tbody td,
+    .analytics-card thead th,
+    .analytics-card tbody td {
+        padding: 8px 8px;
+        word-break: break-word;
+    }
+    /* Make action buttons stack vertically on mobile */
+    .row-actions {
+        flex-direction: column;
+        gap: 6px;
+        align-items: stretch;
+    }
+}
+
+@media (max-width: 480px) {
+    .list-view .table-card table,
+    .form-card table,
+    .analytics-card table {
+        min-width: 340px;
+        font-size: 0.88em;
+    }
+    .list-view .table-card thead th,
+    .list-view .table-card tbody td,
+    .form-card thead th,
+    .form-card tbody td,
+    .analytics-card thead th,
+    .analytics-card tbody td {
+        padding: 6px 4px;
+    }
+    .row-actions {
+        flex-direction: column;
+        gap: 4px;
+        align-items: stretch;
+    }
+}
