@@ -490,6 +490,68 @@ async function handleAddContender(e) {
         const result = await response.json();
         
         if (result.success) {
+            const newContenderId = result.data.id;
+            let mediaUpdated = false;
+            let mediaData = {};
+
+            // Handle picture upload if selected
+            const picFile = selectedPictures[0];
+            if (picFile) {
+                if (window.supabaseClient && typeof uploadToSupabase === 'function') {
+                    try {
+                        const safeName = `${Date.now()}_${picFile.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
+                        const storedPath = await uploadToSupabase(window.SUPABASE_BUCKET_PROFILES, `${newContenderId}/${safeName}`, picFile, { upsert: true });
+                        if (storedPath) {
+                            const base = (window.SUPABASE_URL || '').replace(/\/$/, '');
+                            const publicUrl = `${base}/storage/v1/object/public/${window.SUPABASE_BUCKET_PROFILES}/${storedPath}`;
+                            mediaData.picture = publicUrl;
+                            mediaUpdated = true;
+                            console.log('✅ Picture uploaded to Supabase:', publicUrl);
+                        }
+                    } catch (upErr) {
+                        console.error('Supabase profile upload failed:', upErr);
+                    }
+                }
+            }
+
+            // Handle video upload if selected
+            const videoFile = selectedVideos[0];
+            if (videoFile) {
+                if (window.supabaseClient && typeof uploadToSupabase === 'function' && typeof createSupabaseSignedUrl === 'function') {
+                    try {
+                        const safeVidName = `${Date.now()}_${videoFile.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
+                        const storedVidPath = await uploadToSupabase(window.SUPABASE_BUCKET_VIDEOS, `${newContenderId}/${safeVidName}`, videoFile, { upsert: true });
+                        if (storedVidPath) {
+                            const signed = await createSupabaseSignedUrl(window.SUPABASE_BUCKET_VIDEOS, storedVidPath, 60 * 60);
+                            if (signed) {
+                                mediaData.video = signed;
+                                mediaUpdated = true;
+                                console.log('✅ Video uploaded to Supabase');
+                            }
+                        }
+                    } catch (vidErr) {
+                        console.error('Supabase video upload failed:', vidErr);
+                    }
+                }
+            }
+
+            // Update contender with media URLs if any were uploaded
+            if (mediaUpdated && Object.keys(mediaData).length > 0) {
+                try {
+                    const updateRes = await fetch(`${API_BASE_URL}/events/${eventId}/contenders/${newContenderId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify(mediaData)
+                    });
+                    const updateResult = await updateRes.json();
+                    if (!updateResult.success) {
+                        console.warn('⚠️ Failed to save media URLs to database:', updateResult.error);
+                    }
+                } catch (err) {
+                    console.error('⚠️ Error updating media URLs in database:', err);
+                }
+            }
+
             messageDiv.innerHTML = '<div class="message success">✅ Contender added successfully!</div>';
             document.getElementById('contenderForm').reset();
             selectedPictures = [];
