@@ -1431,9 +1431,9 @@ async function handleCreateVoteTablesInline(e) {
     const token = localStorage.getItem('adminToken');
     const eventId = document.getElementById('voteEventSelectInline').value;
     const voteTableCount = parseInt(document.getElementById('voteTableCountInline').value);
-    const messageDiv = document.getElementById('eventVoteMessage');
-    if (!eventId) { showMessage('eventVoteMessage', 'Please select an event!', 'error'); return; }
-    if (!voteTableCount) { showMessage('eventVoteMessage', 'Please select number of vote tables!', 'error'); return; }
+    const messageDiv = document.getElementById('eventVoteMessageInline');
+    if (!eventId) { showMessage('eventVoteMessageInline', 'Please select an event!', 'error'); return; }
+    if (!voteTableCount) { showMessage('eventVoteMessageInline', 'Please select number of vote tables!', 'error'); return; }
     const voteTables = [];
     for (let i = 1; i <= voteTableCount; i++) {
         const points = parseInt(document.getElementById(`voteTableInline${i}Points`).value);
@@ -1503,7 +1503,7 @@ async function deleteVoteTable(tableId, eventId) {
     if (!confirm('Delete this vote table?')) return;
     const token = localStorage.getItem('adminToken');
     try {
-        const res = await fetch(`${API_BASE_URL}/vote-tables/${tableId}`, {
+        const res = await fetch(`${API_BASE_URL}/events/${eventId}/vote-tables/${tableId}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
