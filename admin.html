@@ -599,6 +599,31 @@
                 <div id="add-hall-of-fame-form" class="form-card hidden">
                     <div id="hallOfFameMessage"></div>
                     <form id="hallOfFameForm">
+                        <!-- User Type Selection -->
+                        <div class="form-group">
+                            <label>User Type *</label>
+                            <div style="display: flex; gap: 20px; margin-top: 10px;">
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="radio" name="userType" value="new" checked onchange="toggleUserType()">
+                                    <span>New User</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="radio" name="userType" value="existing" onchange="toggleUserType()">
+                                    <span>Existing User</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Existing User Selection -->
+                        <div id="existingUserSection" style="display: none;">
+                            <div class="form-group">
+                                <label for="existingUserSelect">Select Existing User *</label>
+                                <select id="existingUserSelect" onchange="loadExistingUserData()">
+                                    <option value="">-- Choose existing user --</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="hofPlayerName">Player Name *</label>

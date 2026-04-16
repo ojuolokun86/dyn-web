@@ -2841,6 +2841,132 @@ function normalizeLeague(name) {
         .replace(/\b\w/g, l => l.toUpperCase()); // Capitalize first letters
 }
 
+// Hall of Fame User Type Toggle
+function toggleUserType() {
+    const userType = document.querySelector('input[name="userType"]:checked').value;
+    const existingUserSection = document.getElementById('existingUserSection');
+    const existingUserSelect = document.getElementById('existingUserSelect');
+    const playerNameInput = document.getElementById('hofPlayerName');
+    const emailInput = document.getElementById('hofEmail');
+    const phoneInput = document.getElementById('hofPhone');
+    const playerImageInput = document.getElementById('hofPlayerImage');
+    const playerImagePreview = document.getElementById('playerImagePreview');
+
+    if (userType === 'existing') {
+        existingUserSection.style.display = 'block';
+        loadExistingUsers();
+        // Clear form fields that will be populated from existing user
+        playerNameInput.value = '';
+        emailInput.value = '';
+        phoneInput.value = '';
+        playerImageInput.value = '';
+        playerImagePreview.style.display = 'none';
+        // Make player name readonly when selecting existing user
+        playerNameInput.readOnly = true;
+        emailInput.readOnly = true;
+        phoneInput.readOnly = true;
+    } else {
+        existingUserSection.style.display = 'none';
+        existingUserSelect.value = '';
+        // Make fields editable for new user
+        playerNameInput.readOnly = false;
+        emailInput.readOnly = false;
+        phoneInput.readOnly = false;
+    }
+}
+
+// Load existing Hall of Fame users
+async function loadExistingUsers() {
+    const select = document.getElementById('existingUserSelect');
+    select.innerHTML = '<option value="">Loading...</option>';
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/admin/hall-of-fame-web/list`);
+        const result = await response.json();
+
+        if (!result.success || !Array.isArray(result.data)) {
+            select.innerHTML = '<option value="">No existing users found</option>';
+            return;
+        }
+
+        // Group users by player_name and collect their data
+        const userMap = new Map();
+
+        result.data.forEach(entry => {
+            const key = entry.player_name.toLowerCase();
+            if (!userMap.has(key)) {
+                userMap.set(key, {
+                    player_name: entry.player_name,
+                    email: entry.email || '',
+                    phone: entry.phone || '',
+                    player_image: entry.player_image || '',
+                    wins: []
+                });
+            }
+            userMap.get(key).wins.push({
+                id: entry.id,
+                team_name: entry.team_name,
+                season: entry.season,
+                team_logo: entry.team_logo,
+                league: entry.league
+            });
+        });
+
+        if (userMap.size === 0) {
+            select.innerHTML = '<option value="">No existing users found</option>';
+            return;
+        }
+
+        select.innerHTML = '<option value="">-- Choose existing user --</option>';
+        userMap.forEach((userData, key) => {
+            const option = document.createElement('option');
+            option.value = JSON.stringify(userData);
+            option.textContent = `${userData.player_name} (${userData.wins.length}x winner${userData.wins.length > 1 ? 's' : ''})`;
+            select.appendChild(option);
+        });
+
+    } catch (error) {
+        console.error('Error loading existing users:', error);
+        select.innerHTML = '<option value="">Error loading users</option>';
+    }
+}
+
+// Load existing user data when selected
+function loadExistingUserData() {
+    const select = document.getElementById('existingUserSelect');
+    const selectedValue = select.value;
+
+    if (!selectedValue) {
+        // Clear form if no user selected
+        document.getElementById('hofPlayerName').value = '';
+        document.getElementById('hofEmail').value = '';
+        document.getElementById('hofPhone').value = '';
+        document.getElementById('playerImagePreview').style.display = 'none';
+        return;
+    }
+
+    try {
+        const userData = JSON.parse(selectedValue);
+
+        // Populate form with existing user data
+        document.getElementById('hofPlayerName').value = userData.player_name || '';
+        document.getElementById('hofEmail').value = userData.email || '';
+        document.getElementById('hofPhone').value = userData.phone || '';
+
+        // Show player image if exists
+        if (userData.player_image) {
+            const preview = document.getElementById('playerImagePreview');
+            preview.querySelector('img').src = userData.player_image;
+            preview.style.display = 'block';
+        } else {
+            document.getElementById('playerImagePreview').style.display = 'none';
+        }
+
+    } catch (error) {
+        console.error('Error parsing user data:', error);
+    }
+}
+
 async function loadHallOfFameList() {
     const listDiv = document.getElementById('hallOfFameList');
     if (!listDiv) return;
@@ -2969,6 +3095,18 @@ async function handleAddHallOfFame(e) {
     msgDiv.innerHTML = '<div class="message">⏳ Uploading images...</div>';
 
     try {
+        // Check user type
+        const userType = document.querySelector('input[name="userType"]:checked').value;
+        
+        // For existing users, validate that a user is selected
+        if (userType === 'existing') {
+            const existingUserSelect = document.getElementById('existingUserSelect');
+            if (!existingUserSelect.value) {
+                msgDiv.innerHTML = '<div class="message error">❌ Please select an existing user</div>';
+                return;
+            }
+        }
+
         // Upload team logo if selected
         let teamLogoUrl = '';
         const teamLogoFile = document.getElementById('hofTeamLogo').files[0];
@@ -2990,7 +3128,7 @@ async function handleAddHallOfFame(e) {
             }
         }
 
-        // Upload player image if selected
+        // Upload player image if selected (only for new users or when explicitly uploaded)
         let playerImageUrl = '';
         const playerImageFile = document.getElementById('hofPlayerImage').files[0];
         if (playerImageFile) {
@@ -3011,7 +3149,7 @@ async function handleAddHallOfFame(e) {
             }
         }
 
-        // Now submit the Hall of Fame entry
+        // Prepare Hall of Fame entry data
         const hofData = {
             player_name: document.getElementById('hofPlayerName').value,
             league: document.getElementById('hofLeague').value,
@@ -3022,6 +3160,12 @@ async function handleAddHallOfFame(e) {
             email: document.getElementById('hofEmail').value || '',
             phone: document.getElementById('hofPhone').value || ''
         };
+
+        // For existing users, if no new player image was uploaded, keep the existing one
+        if (userType === 'existing' && !playerImageUrl) {
+            const existingUserData = JSON.parse(document.getElementById('existingUserSelect').value);
+            hofData.player_image = existingUserData.player_image || '';
+        }
 
         const res = await fetch(`${API_BASE_URL}/admin/hall-of-fame-web`, {
             method: 'POST',
@@ -3039,6 +3183,13 @@ async function handleAddHallOfFame(e) {
             document.getElementById('hallOfFameForm').reset();
             document.getElementById('teamLogoPreview').style.display = 'none';
             document.getElementById('playerImagePreview').style.display = 'none';
+            // Reset user type to new and hide existing user section
+            document.querySelector('input[name="userType"][value="new"]').checked = true;
+            document.getElementById('existingUserSection').style.display = 'none';
+            // Make fields editable again
+            document.getElementById('hofPlayerName').readOnly = false;
+            document.getElementById('hofEmail').readOnly = false;
+            document.getElementById('hofPhone').readOnly = false;
             setTimeout(() => {
                 toggleForm('add-hall-of-fame-form');
                 loadHallOfFameList();
@@ -3509,6 +3660,139 @@ async function resendHallOfFameEmail(entryId) {
         // Reset button state
         event.target.textContent = '📧';
         event.target.disabled = false;
+    }
+}
+
+// Hall of Fame User Type Functions
+function toggleUserType() {
+    const userType = document.querySelector('input[name="userType"]:checked').value;
+    const existingUserSection = document.getElementById('existingUserSection');
+    const playerNameField = document.getElementById('hofPlayerName');
+    const emailField = document.getElementById('hofEmail');
+    const phoneField = document.getElementById('hofPhone');
+    
+    if (userType === 'existing') {
+        existingUserSection.style.display = 'block';
+        loadExistingUsers();
+        // Make personal fields read-only for existing users
+        playerNameField.readOnly = true;
+        emailField.readOnly = true;
+        phoneField.readOnly = true;
+    } else {
+        existingUserSection.style.display = 'none';
+        // Make fields editable for new users
+        playerNameField.readOnly = false;
+        emailField.readOnly = false;
+        phoneField.readOnly = false;
+        // Clear existing user selection
+        document.getElementById('existingUserSelect').value = '';
+    }
+}
+
+async function loadExistingUsers() {
+    const select = document.getElementById('existingUserSelect');
+    const token = localStorage.getItem('adminToken');
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/admin/hall-of-fame-web/list`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success && Array.isArray(result.data)) {
+            // Clear existing options except the first one
+            select.innerHTML = '<option value="">-- Choose existing user --</option>';
+            
+            // Group users by player_name and collect their data
+            const userMap = new Map();
+            
+            result.data.forEach(entry => {
+                const key = entry.player_name.toLowerCase();
+                if (!userMap.has(key)) {
+                    userMap.set(key, {
+                        player_name: entry.player_name,
+                        email: entry.email || '',
+                        phone: entry.phone || '',
+                        player_image: entry.player_image || '',
+                        wins: []
+                    });
+                }
+                
+                // Update player_image if this entry has one and we don't have one yet
+                if (entry.player_image && !userMap.get(key).player_image) {
+                    userMap.get(key).player_image = entry.player_image;
+                }
+                
+                userMap.get(key).wins.push({
+                    id: entry.id,
+                    team_name: entry.team_name,
+                    season: entry.season,
+                    team_logo: entry.team_logo,
+                    league: entry.league
+                });
+            });
+            
+            // Add options to select
+            userMap.forEach((userData, key) => {
+                const option = document.createElement('option');
+                option.value = JSON.stringify(userData);
+                option.textContent = userData.player_name;
+                select.appendChild(option);
+            });
+        } else {
+            console.error('Invalid response format:', result);
+        }
+    } catch (error) {
+        console.error('Error loading existing users:', error);
+    }
+}
+
+function loadExistingUserData() {
+    const select = document.getElementById('existingUserSelect');
+    const selectedValue = select.value;
+    
+    if (!selectedValue) {
+        // Clear fields if no user selected
+        document.getElementById('hofPlayerName').value = '';
+        document.getElementById('hofEmail').value = '';
+        document.getElementById('hofPhone').value = '';
+        return;
+    }
+    
+    try {
+        const userData = JSON.parse(selectedValue);
+        
+        // Populate form with existing user data
+        document.getElementById('hofPlayerName').value = userData.player_name || '';
+        document.getElementById('hofEmail').value = userData.email || '';
+        document.getElementById('hofPhone').value = userData.phone || '';
+        
+        // Show player image if exists
+        if (userData.player_image) {
+            const preview = document.getElementById('playerImagePreview');
+            preview.querySelector('img').src = userData.player_image;
+            preview.style.display = 'block';
+        } else {
+            document.getElementById('playerImagePreview').style.display = 'none';
+        }
+        
+        // Clear team-related fields for new entry
+        document.getElementById('hofLeague').value = '';
+        document.getElementById('hofTeam').value = '';
+        document.getElementById('hofSeason').value = '';
+        
+        // Clear file inputs
+        document.getElementById('hofTeamLogo').value = '';
+        
+        // Hide team logo preview
+        document.getElementById('teamLogoPreview').style.display = 'none';
+        
+    } catch (error) {
+        console.error('Error parsing user data:', error);
     }
 }
 
