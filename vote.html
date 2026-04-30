@@ -844,9 +844,13 @@
             try {
                 messageDiv.innerHTML = '<span class="loading-spinner" style="font-size: 11px;">⏳ Voting...</span>';
 
+                // Get persistent voter ID
+                const voterId = getVoterId();
+                
                 const payload = {
                     contenderId: contenderId,
-                    voteTableId: selectedTableId
+                    voteTableId: selectedTableId,
+                    fingerprint: voterId
                 };
 
                 const res = await fetch(`${API_BASE_URL}/events/${currentEvent.id}/vote`, {
@@ -872,7 +876,6 @@
                     messageDiv.innerHTML = `<span style="color: #ff6b6b;">❌ ${result.error || 'Vote failed'}</span>`;
                 }
             } catch (err) {
-                console.error('Vote error:', err);
                 messageDiv.innerHTML = '<span style="color: #ff6b6b;">❌ Error voting</span>';
             }
         }
@@ -891,9 +894,13 @@
             try {
                 messageDiv.innerHTML = '<div class="vote-message info"><span class="loading-spinner"></span> Saving vote...</div>';
 
+                // Get persistent voter ID
+                const voterId = getVoterId();
+
                 const payload = {
                     contenderId: selectedContenderId,
-                    voteTableId: selectedTableId || null
+                    voteTableId: selectedTableId || null,
+                    fingerprint: voterId
                 };
 
                 const res = await fetch(`${API_BASE_URL}/events/${currentEvent.id}/vote`, {
@@ -933,6 +940,16 @@
                 '>': '&gt;',
                 '"': '&quot;'
             }[c] || c));
+        }
+
+        // Get or create persistent voter ID stored in localStorage
+        function getVoterId() {
+            let id = localStorage.getItem('voter_id');
+            if (!id) {
+                id = crypto.randomUUID();
+                localStorage.setItem('voter_id', id);
+            }
+            return id;
         }
     </script>
 </body>

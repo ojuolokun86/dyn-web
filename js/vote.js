@@ -219,6 +219,7 @@ document.addEventListener('click', (e) => {
 });
 
 async function handleCastVote() {
+  console.log("🔥 ENTERED handleCastVote");
   const msg = document.getElementById('voteMessage');
   msg.innerHTML = '';
   if (!selectedContenderId) {
@@ -232,7 +233,14 @@ async function handleCastVote() {
 
   // Try to call backend vote endpoint if exists
   try {
-    const payload = { contenderId: selectedContenderId, voteTableId: selectedTableId };
+    // Get persistent voter ID
+    const voterId = getVoterId();
+    
+    const payload = { 
+      contenderId: selectedContenderId, 
+      voteTableId: selectedTableId,
+      fingerprint: voterId
+    };
     const res = await fetch(`${API_BASE_URL}/events/${currentEvent.id}/vote`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -262,13 +270,6 @@ async function handleCastVote() {
         await loadContenders();
         return;
       }
-    }
-
-    const responseBody = await res.json().catch(() => null);
-    const errorMessage = responseBody?.error || 'Unable to cast vote';
-    if (errorMessage.includes('already voted')) {
-      msg.innerHTML = `<div class="message error">${escapeHtml(errorMessage)}</div>`;
-      return;
     }
   } catch (err) {
     console.warn('vote endpoint failed, falling back to local update', err);
@@ -310,8 +311,19 @@ function escapeHtml(text) {
   return String(text).replace(/[&<>"]+/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]||c));
 }
 
+// Get or create persistent voter ID stored in localStorage
+function getVoterId() {
+  let id = localStorage.getItem('voter_id');
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem('voter_id', id);
+  }
+  return id;
+}
+
 // Adding more detailed logging to debug the redirection issue
 function handleVoteFromCard(voteTableId) {
+  console.log("🔥 ENTERED handleVoteFromCard");
     console.log(`Attempting to vote for table ID: ${voteTableId}`);
 
     fetch(`/api/events/${currentEvent.id}/vote`, {
