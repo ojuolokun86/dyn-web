@@ -230,17 +230,6 @@ async function handleCastVote() {
     return;
   }
 
-  // Track votes per table for current event
-  let votesRecord = JSON.parse(localStorage.getItem('votesRecord')) || {};
-  const eventKey = `event_${currentEvent.id}`;
-  if (!votesRecord[eventKey]) votesRecord[eventKey] = {};
-  votesRecord[eventKey][selectedTableId] = true;
-  localStorage.setItem('votesRecord', JSON.stringify(votesRecord));
-
-  console.log('🔍 Vote: Recorded vote for table:', selectedTableId);
-  console.log('🔍 Vote: Current votes record:', votesRecord[eventKey]);
-  console.log('🔍 Vote: All vote tables:', voteTables.map(vt => ({ id: vt.id, table_number: vt.table_number })));
-
   // Try to call backend vote endpoint if exists
   try {
     const payload = { contenderId: selectedContenderId, voteTableId: selectedTableId };
@@ -253,10 +242,15 @@ async function handleCastVote() {
     if (res.ok) {
       const r = await res.json();
       if (r.success) {
+        // Mark table as used only after successful vote
+        let votesRecord = JSON.parse(localStorage.getItem('votesRecord')) || {};
+        const eventKey = `event_${currentEvent.id}`;
+        if (!votesRecord[eventKey]) votesRecord[eventKey] = {};
+        votesRecord[eventKey][selectedTableId] = true;
+        localStorage.setItem('votesRecord', JSON.stringify(votesRecord));
+
         msg.innerHTML = '<div class="message success">Vote recorded!</div>';
-        // Check if all vote tables have been used
         const allVoted = voteTables.every(vt => votesRecord[eventKey][vt.id]);
-        console.log('🔍 Vote: All voted check result:', allVoted, 'for tables:', voteTables.map(vt => vt.id), 'with record:', votesRecord[eventKey]);
         if (allVoted) {
           msg.innerHTML = '<div class="message success">All votes cast! Redirecting to results...</div>';
           setTimeout(() => {
@@ -267,22 +261,16 @@ async function handleCastVote() {
         }
         await loadContenders();
         return;
-      } else if (r.error && r.error.includes('already voted')) {
-        msg.innerHTML = '<div class="message error">You have already voted using this vote table</div>';
-        // Check if all vote tables have been used
-        const allVoted = voteTables.every(vt => votesRecord[eventKey][vt.id]);
-        console.log('🔍 Vote: All voted check result (already voted):', allVoted);
-        if (allVoted) {
-          msg.innerHTML = '<div class="message success">All votes cast! Redirecting to results...</div>';
-          setTimeout(() => {
-            window.location.href = `results.html?eventId=${currentEvent.id}`;
-          }, 1500);
-        }
-        return;
       }
     }
+
+    const responseBody = await res.json().catch(() => null);
+    const errorMessage = responseBody?.error || 'Unable to cast vote';
+    if (errorMessage.includes('already voted')) {
+      msg.innerHTML = `<div class="message error">${escapeHtml(errorMessage)}</div>`;
+      return;
+    }
   } catch (err) {
-    // endpoint may not exist — fall back to local update
     console.warn('vote endpoint failed, falling back to local update', err);
   }
 
@@ -296,10 +284,15 @@ async function handleCastVote() {
     const sIdx = snapshot.findIndex(s=>s.id===selectedContenderId);
     if (sIdx !== -1) snapshot[sIdx].total_points = contenders[idx].total_points;
     localStorage.setItem('contenders', JSON.stringify(snapshot));
+
+    let votesRecord = JSON.parse(localStorage.getItem('votesRecord')) || {};
+    const eventKey = `event_${currentEvent.id}`;
+    if (!votesRecord[eventKey]) votesRecord[eventKey] = {};
+    votesRecord[eventKey][selectedTableId] = true;
+    localStorage.setItem('votesRecord', JSON.stringify(votesRecord));
+
     msg.innerHTML = '<div class="message success">Vote recorded locally (offline mode).</div>';
-    // Check if all vote tables have been used
     const allVoted = voteTables.every(vt => votesRecord[eventKey][vt.id]);
-    console.log('🔍 Vote: All voted check result (fallback):', allVoted, 'for tables:', voteTables.map(vt => vt.id), 'with record:', votesRecord[eventKey]);
     if (allVoted) {
       msg.innerHTML = '<div class="message success">All votes cast! Redirecting to results...</div>';
       setTimeout(() => {
