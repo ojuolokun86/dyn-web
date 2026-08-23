@@ -3092,7 +3092,7 @@ async function handleAddHallOfFame(e) {
     const token = localStorage.getItem('adminToken');
     const msgDiv = document.getElementById('hallOfFameMessage');
     
-    msgDiv.innerHTML = '<div class="message">⏳ Uploading images...</div>';
+    msgDiv.innerHTML = '<div class="message">⏳ Processing Hall of Fame entry...</div>';
 
     try {
         // Check user type
@@ -3107,10 +3107,22 @@ async function handleAddHallOfFame(e) {
             }
         }
 
-        // Upload team logo if selected
+        // Validate that a team was selected
+        const teamName = document.getElementById('hofTeam').value.trim();
+        if (!teamName) {
+            msgDiv.innerHTML = '<div class="message error">❌ Please search and select a team</div>';
+            return;
+        }
+
+        // Get team logo URL from the preview or use existing cached URL
         let teamLogoUrl = '';
+        
+        // Check if there's a manually uploaded logo file
         const teamLogoFile = document.getElementById('hofTeamLogo').files[0];
         if (teamLogoFile) {
+            console.log('[handleAddHallOfFame] Uploading manually selected logo');
+            msgDiv.innerHTML = '<div class="message">⏳ Uploading team logo...</div>';
+            
             const logoFormData = new FormData();
             logoFormData.append('image', teamLogoFile);
             
@@ -3125,6 +3137,17 @@ async function handleAddHallOfFame(e) {
             const logoResult = await logoRes.json();
             if (logoResult.success) {
                 teamLogoUrl = logoResult.url;
+                console.log('[handleAddHallOfFame] Manual logo uploaded:', teamLogoUrl);
+            }
+        } else {
+            // Use auto-fetched and cached logo
+            const preview = document.getElementById('teamLogoPreview');
+            if (preview && preview.style.display !== 'none') {
+                const logoImg = preview.querySelector('img');
+                if (logoImg && logoImg.src) {
+                    teamLogoUrl = logoImg.src;
+                    console.log('[handleAddHallOfFame] Using auto-fetched cached logo:', teamLogoUrl);
+                }
             }
         }
 
@@ -3132,6 +3155,8 @@ async function handleAddHallOfFame(e) {
         let playerImageUrl = '';
         const playerImageFile = document.getElementById('hofPlayerImage').files[0];
         if (playerImageFile) {
+            msgDiv.innerHTML = '<div class="message">⏳ Uploading player image...</div>';
+            
             const imageFormData = new FormData();
             imageFormData.append('image', playerImageFile);
             
@@ -3149,11 +3174,13 @@ async function handleAddHallOfFame(e) {
             }
         }
 
+        msgDiv.innerHTML = '<div class="message">⏳ Saving to database...</div>';
+
         // Prepare Hall of Fame entry data
         const hofData = {
             player_name: document.getElementById('hofPlayerName').value,
             league: document.getElementById('hofLeague').value,
-            team_name: document.getElementById('hofTeam').value,
+            team_name: teamName,
             season: parseInt(document.getElementById('hofSeason').value) || 1,
             team_logo: teamLogoUrl,
             player_image: playerImageUrl,
@@ -3167,6 +3194,8 @@ async function handleAddHallOfFame(e) {
             hofData.player_image = existingUserData.player_image || '';
         }
 
+        console.log('[handleAddHallOfFame] Submitting data:', hofData);
+
         const res = await fetch(`${API_BASE_URL}/admin/hall-of-fame-web`, {
             method: 'POST',
             headers: {
@@ -3179,10 +3208,12 @@ async function handleAddHallOfFame(e) {
         const result = await res.json();
 
         if (result.success) {
-            msgDiv.innerHTML = '<div class="message success">✅ Hall of Fame entry added!</div>';
+            msgDiv.innerHTML = '<div class="message success">✅ Hall of Fame entry added successfully!</div>';
             document.getElementById('hallOfFameForm').reset();
             document.getElementById('teamLogoPreview').style.display = 'none';
             document.getElementById('playerImagePreview').style.display = 'none';
+            document.getElementById('hofTeamLogoBtn').textContent = '📤 Manual Upload (Optional)';
+            document.getElementById('hofTeamLogoBtn').style.opacity = '1';
             // Reset user type to new and hide existing user section
             document.querySelector('input[name="userType"][value="new"]').checked = true;
             document.getElementById('existingUserSection').style.display = 'none';
@@ -3198,6 +3229,7 @@ async function handleAddHallOfFame(e) {
             msgDiv.innerHTML = `<div class="message error">❌ ${result.error || result.message}</div>`;
         }
     } catch (err) {
+        console.error('[handleAddHallOfFame] Error:', err);
         msgDiv.innerHTML = `<div class="message error">❌ Error: ${err.message}</div>`;
     }
 }
@@ -3243,7 +3275,124 @@ document.addEventListener('DOMContentLoaded', function() {
     if (hallOfFameForm) {
         hallOfFameForm.addEventListener('submit', handleAddHallOfFame);
     }
+
+    // Team search functionality
+    const hofTeamSearch = document.getElementById('hofTeamSearch');
+    if (hofTeamSearch) {
+        let searchTimeout;
+        hofTeamSearch.addEventListener('input', function(e) {
+            clearTimeout(searchTimeout);
+            const query = e.target.value.trim();
+            
+            if (query.length < 2) {
+                document.getElementById('hofTeamSearchResults').style.display = 'none';
+                document.getElementById('hofTeamSearchStatus').innerHTML = '';
+                return;
+            }
+
+            document.getElementById('hofTeamSearchStatus').innerHTML = '🔍 Searching...';
+            searchTimeout = setTimeout(async () => {
+                await searchAndDisplayTeams(query);
+            }, 500);
+        });
+
+        // Close results when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.form-group')) {
+                document.getElementById('hofTeamSearchResults').style.display = 'none';
+            }
+        });
+    }
+
+    // Manual logo upload button
+    const hofTeamLogoBtn = document.getElementById('hofTeamLogoBtn');
+    if (hofTeamLogoBtn) {
+        hofTeamLogoBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('hofTeamLogo').click();
+        });
+    }
+
+    // Handle manual logo upload
+    const hofTeamLogo = document.getElementById('hofTeamLogo');
+    if (hofTeamLogo) {
+        hofTeamLogo.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('teamLogoPreview');
+                    preview.querySelector('img').src = e.target.result;
+                    preview.style.display = 'block';
+                    document.getElementById('hofTeamLogoBtn').textContent = '📤 Manual Logo ✓';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
 });
+
+/**
+ * Search for teams and display results
+ */
+async function searchAndDisplayTeams(query) {
+    try {
+        console.log(`[searchAndDisplayTeams] Searching for: ${query}`);
+        document.getElementById('hofTeamSearchStatus').innerHTML = '🔍 Searching teams...';
+
+        const teamData = await window.fetchAndCacheTeamLogo(query);
+
+        if (teamData) {
+            const resultsDiv = document.getElementById('hofTeamSearchResults');
+            resultsDiv.innerHTML = `
+                <div style="padding: 12px; cursor: pointer; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 12px; hover:background: #f5f5f5;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='white'" onclick="selectTeamForHallOfFame('${escapeHtml(teamData.name)}', '${escapeHtml(teamData.logo || '')}')">
+                    ${teamData.logo ? `<img src="${escapeHtml(teamData.logo)}" style="width: 40px; height: 40px; object-fit: contain; border-radius: 4px;">` : '<div style="width: 40px; height: 40px; background: #ddd; border-radius: 4px; display: flex; align-items: center; justify-content: center;">⚽</div>'}
+                    <div>
+                        <div style="font-weight: 600; font-size: 14px;">${escapeHtml(teamData.name)}</div>
+                        <div style="font-size: 12px; color: #666;">Click to select</div>
+                    </div>
+                </div>
+            `;
+            resultsDiv.style.display = 'block';
+            document.getElementById('hofTeamSearchStatus').innerHTML = '✅ Team found!';
+        } else {
+            document.getElementById('hofTeamSearchResults').innerHTML = '<div style="padding: 12px; text-align: center; color: #666;">❌ Team not found</div>';
+            document.getElementById('hofTeamSearchResults').style.display = 'block';
+            document.getElementById('hofTeamSearchStatus').innerHTML = '❌ No teams found. Try another name or use manual upload.';
+        }
+    } catch (error) {
+        console.error('[searchAndDisplayTeams] Error:', error);
+        document.getElementById('hofTeamSearchStatus').innerHTML = '⚠️ Search error. Try manual upload.';
+    }
+}
+
+/**
+ * Select a team for Hall of Fame
+ */
+async function selectTeamForHallOfFame(teamName, logoUrl) {
+    console.log(`[selectTeamForHallOfFame] Selected: ${teamName}`);
+
+    // Set the hidden team field
+    document.getElementById('hofTeam').value = teamName;
+    document.getElementById('hofTeamSearch').value = teamName;
+
+    // Hide results
+    document.getElementById('hofTeamSearchResults').style.display = 'none';
+    document.getElementById('hofTeamSearchStatus').innerHTML = '';
+
+    // Show logo preview if available
+    if (logoUrl) {
+        const preview = document.getElementById('teamLogoPreview');
+        if (preview) {
+            preview.querySelector('img').src = logoUrl;
+            preview.style.display = 'block';
+            document.getElementById('hofTeamLogoBtn').textContent = '📥 Logo Auto-fetched ✓';
+            document.getElementById('hofTeamLogoBtn').style.opacity = '0.7';
+        }
+    }
+
+    console.log(`[selectTeamForHallOfFame] Team auto-filled with logo from TheSportsDB`);
+}
 
 // Mobile Sidebar Toggle
 function setupMobileSidebar() {

@@ -199,7 +199,11 @@ async function renderPastWinnersSlideshow(col) {
         }
 
         if (result.success && Array.isArray(result.data) && result.data.length > 0) {
-            const winners = result.data;
+            const winners = [...result.data].sort((a, b) => {
+                const aDate = new Date(a.ended_at || a.updated_at || a.created_at || 0).getTime();
+                const bDate = new Date(b.ended_at || b.updated_at || b.created_at || 0).getTime();
+                return bDate - aDate;
+            });
 
             col.innerHTML = `
                 <div class="section-title">🏆 LAST SEASON WINNER</div>

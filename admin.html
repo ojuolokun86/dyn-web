@@ -636,9 +636,14 @@
                         </div>
 
                         <div class="form-row">
-                            <div class="form-group">
-                                <label for="hofTeam">Team Name *</label>
-                                <input type="text" id="hofTeam" placeholder="e.g., Manchester United" required>
+                            <div class="form-group" style="flex: 1;">
+                                <label for="hofTeamSearch">Team Name (Search) *</label>
+                                <div style="position: relative;">
+                                    <input type="text" id="hofTeamSearch" placeholder="Type team name (e.g., PSG, Manchester United)" style="width: 100%;">
+                                    <div id="hofTeamSearchResults" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-top: none; max-height: 200px; overflow-y: auto; display: none; z-index: 10; border-radius: 0 0 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"></div>
+                                    <div id="hofTeamSearchStatus" style="font-size: 12px; color: #666; margin-top: 4px; min-height: 16px;"></div>
+                                </div>
+                                <small style="color: #666; font-size: 12px; display: block; margin-top: 4px;">🔍 Auto-fetches from TheSportsDB API</small>
                             </div>
                             <div class="form-group">
                                 <label for="hofSeason">Season *</label>
@@ -646,11 +651,16 @@
                             </div>
                         </div>
 
+                        <input type="hidden" id="hofTeam" value="">
+
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="hofTeamLogo">Team Logo</label>
-                                <input type="file" id="hofTeamLogo" accept="image/*">
-                                <small style="color: #666; font-size: 12px;">Upload team logo image</small>
+                                <div style="position: relative;">
+                                    <input type="file" id="hofTeamLogo" accept="image/*" style="display: none;">
+                                    <button type="button" id="hofTeamLogoBtn" class="btn btn-secondary" style="width: 100%;">📤 Manual Upload (Optional)</button>
+                                </div>
+                                <small style="color: #666; font-size: 12px;">Auto-fetched from TheSportsDB if available</small>
                             </div>
                             <div class="form-group">
                                 <label for="hofPlayerImage">Player Image</label>
@@ -782,6 +792,7 @@
 
     <script src="js/api-config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
+    <script src="js/team-search.js"></script>
     <script src="js/admin.js"></script>
 </body>
 </html>

@@ -80,7 +80,10 @@ async function testAPICall() {
 
 function checkConfiguration() {
     
-    );
+    if (!window.BACKEND_URL) {
+        console.error('❌ BACKEND_URL is not defined!');
+        console.error('💡 Make sure to set BACKEND_URL in your frontend configuration');
+    }
     
     
     
@@ -92,13 +95,7 @@ function checkConfiguration() {
     
     
     // This would fail if api-config.js is the only config. Add on next version
-    ');
-    
-    
-    ');
-    ');
-    ');
-    ');
+
 }
 
 // ===== NETWORK MONITOR =====
@@ -128,7 +125,7 @@ function monitorNetworkErrors() {
 async function runFullDiagnostics() {
     console.clear();
     
-    );
+    
     
     checkConfiguration();
     
@@ -144,7 +141,7 @@ async function runFullDiagnostics() {
         await testAPICall();
     }
     
-    );
+    
     
     
     if (backendRunning && corsWorking) {
@@ -164,5 +161,3 @@ window.DEBUG = {
     monitorNetworkErrors,
     runFullDiagnostics
 };
-
-');
