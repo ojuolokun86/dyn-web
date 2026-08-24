@@ -51,17 +51,56 @@ async function fetchTeamData(teamName) {
 }
 
 /**
+ * Normalize a team name for comparison and safe matching.
+ * @param {string} teamName
+ * @returns {string}
+ */
+function normalizeTeamName(teamName) {
+  return String(teamName || '')
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, ' ')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .trim();
+}
+
+/**
  * Make safe filename from team name
  * @param {string} teamName - The team name
  * @returns {string} Safe filename
  */
 function makeSafeTeamName(teamName) {
-  return teamName
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '')
-    .replace(/-+/g, '-')
+  return normalizeTeamName(teamName)
+    .replace(/-/g, '-')
     .substring(0, 50);
+}
+
+/**
+ * Build a manual fallback result when an external API lookup fails.
+ * @param {string} teamName
+ * @returns {{name: string, logo: null, source: string}}
+ */
+function buildManualTeamResult(teamName) {
+  const cleanName = String(teamName || '').trim();
+  return {
+    name: cleanName || 'Unknown team',
+    logo: null,
+    source: 'manual'
+  };
+}
+
+/**
+ * Prevent duplicate rapid searches from triggering redundant API calls.
+ * @param {string} previousQuery
+ * @param {string} nextQuery
+ * @returns {boolean}
+ */
+function shouldSkipSearchRequest(previousQuery, nextQuery) {
+  if (!previousQuery || !nextQuery) return false;
+  return normalizeTeamName(previousQuery) === normalizeTeamName(nextQuery);
 }
 
 /**
@@ -263,17 +302,48 @@ async function ensureHallOfFameBucket() {
 }
 
 // Initialize on script load
-document.addEventListener('DOMContentLoaded', async () => {
-  // Ensure bucket is accessible
-  if (window.supabaseClient) {
-    await ensureHallOfFameBucket();
-  }
-});
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', async () => {
+    // Ensure bucket is accessible
+    if (window.supabaseClient) {
+      await ensureHallOfFameBucket();
+    }
+  });
+}
 
 // Make functions globally available
-window.fetchTeamData = fetchTeamData;
-window.cacheTeamLogo = cacheTeamLogo;
-window.fetchAndCacheTeamLogo = fetchAndCacheTeamLogo;
-window.checkCachedLogo = checkCachedLogo;
-window.makeSafeTeamName = makeSafeTeamName;
-window.ensureHallOfFameBucket = ensureHallOfFameBucket;
+if (typeof window !== 'undefined') {
+  window.fetchTeamData = fetchTeamData;
+  window.cacheTeamLogo = cacheTeamLogo;
+  window.fetchAndCacheTeamLogo = fetchAndCacheTeamLogo;
+  window.checkCachedLogo = checkCachedLogo;
+  window.makeSafeTeamName = makeSafeTeamName;
+  window.buildManualTeamResult = buildManualTeamResult;
+  window.shouldSkipSearchRequest = shouldSkipSearchRequest;
+  window.ensureHallOfFameBucket = ensureHallOfFameBucket;
+}
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.fetchTeamData = fetchTeamData;
+  globalThis.cacheTeamLogo = cacheTeamLogo;
+  globalThis.fetchAndCacheTeamLogo = fetchAndCacheTeamLogo;
+  globalThis.checkCachedLogo = checkCachedLogo;
+  globalThis.makeSafeTeamName = makeSafeTeamName;
+  globalThis.buildManualTeamResult = buildManualTeamResult;
+  globalThis.shouldSkipSearchRequest = shouldSkipSearchRequest;
+  globalThis.ensureHallOfFameBucket = ensureHallOfFameBucket;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    fetchTeamData,
+    cacheTeamLogo,
+    fetchAndCacheTeamLogo,
+    checkCachedLogo,
+    makeSafeTeamName,
+    buildManualTeamResult,
+    shouldSkipSearchRequest,
+    ensureHallOfFameBucket,
+    normalizeTeamName
+  };
+}

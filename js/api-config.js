@@ -8,7 +8,13 @@
  *   <script src="js/api-config.js"></script>
  *   // Access as: window.API_BASE_URL, window.isBackendRunning()
  */
-const url = 'https://dyn-server.fly.dev' //'https://dyn.fly.dev'; //'http://localhost:5000' https://dyn-server.fly.dev/
+const defaultLocalUrl = 'http://localhost:5000';
+const defaultProductionUrl = 'https://dyn-server.fly.dev';
+
+const localHostnames = ['localhost', '127.0.0.1', '[::1]'];
+const isLocalFrontend = typeof window !== 'undefined' && window.location && localHostnames.includes(window.location.hostname);
+const url = isLocalFrontend ? defaultLocalUrl : defaultProductionUrl;
+
 const API_BASE_URL = `${url}/api`;
 const BACKEND_URL = url;
 const BACKEND_TIMEOUT = 5000; // 5 seconds
@@ -123,6 +129,10 @@ async function fetchAPI(endpoint, options = {}) {
  * Show backend connection error message
  */
 function showBackendError() {
+    if (typeof document === 'undefined' || typeof document.getElementById !== 'function' || typeof document.createElement !== 'function') {
+        return;
+    }
+
     const banner = document.getElementById('backend-error-banner');
     
     if (!banner) {
@@ -136,7 +146,9 @@ function showBackendError() {
                 <small>Make sure to run: <code>npm run dev</code> in the backend folder</small>
             </div>
         `;
-        document.body.insertAdjacentElement('afterbegin', div);
+        if (document.body && typeof document.body.insertAdjacentElement === 'function') {
+            document.body.insertAdjacentElement('afterbegin', div);
+        }
     }
 }
 
@@ -144,6 +156,9 @@ function showBackendError() {
  * Add error banner styles if not already present
  */
 function addErrorStyles() {
+    if (typeof document === 'undefined' || typeof document.getElementById !== 'function' || typeof document.createElement !== 'function') {
+        return;
+    }
     if (document.getElementById('backend-error-styles')) return;
     
     const style = document.createElement('style');
@@ -195,29 +210,33 @@ function addErrorStyles() {
 }
 
 // Add styles on page load
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', addErrorStyles);
-} else {
-    addErrorStyles();
+if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', addErrorStyles);
+    } else {
+        addErrorStyles();
+    }
 }
 
 // Check backend on page load
-window.addEventListener('load', async () => {
-    const isRunning = await isBackendRunning();
-    if (!isRunning) {
-        const banner = document.createElement('div');
-        banner.id = 'backend-error-banner';
-        banner.className = 'backend-error-banner';
-        banner.innerHTML = `
-            <div class="backend-error-content">
-                <strong>❌ Backend Server Not Running</strong>
-                <p>Could not connect to backend at ${BACKEND_URL}</p>
-                <small>Start backend with: <code>cd backend && npm run dev</code></small>
-            </div>
-        `;
-        document.body.insertAdjacentElement('afterbegin', banner);
-    }
-});
+if (typeof window !== 'undefined') {
+    window.addEventListener('load', async () => {
+        const isRunning = await isBackendRunning();
+        if (!isRunning && typeof document !== 'undefined') {
+            const banner = document.createElement('div');
+            banner.id = 'backend-error-banner';
+            banner.className = 'backend-error-banner';
+            banner.innerHTML = `
+                <div class="backend-error-content">
+                    <strong>❌ Backend Server Not Running</strong>
+                    <p>Could not connect to backend at ${BACKEND_URL}</p>
+                    <small>Start backend with: <code>cd backend && npm run dev</code></small>
+                </div>
+            `;
+            document.body.insertAdjacentElement('afterbegin', banner);
+        }
+    });
+}
 
 // Export for ES6 modules
 if (typeof module !== 'undefined' && module.exports) {
@@ -230,14 +249,16 @@ if (typeof module !== 'undefined' && module.exports) {
 }
 
 // Make globally available
-window.API_BASE_URL = API_BASE_URL;
-window.BACKEND_URL = BACKEND_URL;
-window.isBackendRunning = isBackendRunning;
-window.fetchAPI = fetchAPI;
-// Expose Supabase helpers and bucket names to other scripts
-window.uploadToSupabase = typeof uploadToSupabase === 'function' ? uploadToSupabase : undefined;
-window.createSupabaseSignedUrl = typeof createSupabaseSignedUrl === 'function' ? createSupabaseSignedUrl : undefined;
-window.SUPABASE_BUCKET_PROFILES = typeof SUPABASE_BUCKET_PROFILES !== 'undefined' ? SUPABASE_BUCKET_PROFILES : 'profiles';
-window.SUPABASE_BUCKET_VIDEOS = typeof SUPABASE_BUCKET_VIDEOS !== 'undefined' ? SUPABASE_BUCKET_VIDEOS : 'videos';
-window.SUPABASE_URL = typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : '';
-window.SUPABASE_ANON_KEY = typeof SUPABASE_ANON_KEY !== 'undefined' ? SUPABASE_ANON_KEY : '';
+if (typeof window !== 'undefined') {
+    window.API_BASE_URL = API_BASE_URL;
+    window.BACKEND_URL = BACKEND_URL;
+    window.isBackendRunning = isBackendRunning;
+    window.fetchAPI = fetchAPI;
+    // Expose Supabase helpers and bucket names to other scripts
+    window.uploadToSupabase = typeof uploadToSupabase === 'function' ? uploadToSupabase : undefined;
+    window.createSupabaseSignedUrl = typeof createSupabaseSignedUrl === 'function' ? createSupabaseSignedUrl : undefined;
+    window.SUPABASE_BUCKET_PROFILES = typeof SUPABASE_BUCKET_PROFILES !== 'undefined' ? SUPABASE_BUCKET_PROFILES : 'profiles';
+    window.SUPABASE_BUCKET_VIDEOS = typeof SUPABASE_BUCKET_VIDEOS !== 'undefined' ? SUPABASE_BUCKET_VIDEOS : 'videos';
+    window.SUPABASE_URL = typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : '';
+    window.SUPABASE_ANON_KEY = typeof SUPABASE_ANON_KEY !== 'undefined' ? SUPABASE_ANON_KEY : '';
+}
