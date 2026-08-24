@@ -12,7 +12,9 @@ const HOF_LOGO_BUCKET = 'profiles';  // Use existing profiles bucket
  * @param {string} teamName - The team name to search for (e.g., "PSG", "Manchester United")
  * @returns {Promise<{name: string, logo: string}|null>} Team data or null if not found
  */
-async function fetchTeamData(teamName) {
+async function fetchTeamData(teamName, options = {}) {
+  const { signal } = options;
+
   try {
     if (!teamName || teamName.trim().length === 0) {
       console.warn('[fetchTeamData] Empty team name provided');
@@ -21,10 +23,9 @@ async function fetchTeamData(teamName) {
 
     console.log(`[fetchTeamData] Searching for team: ${teamName}`);
     
-    // Use backend endpoint for better error handling and security
     const url = `${window.API_BASE_URL}/admin/search-team?teamName=${encodeURIComponent(teamName)}`;
     
-    const response = await fetch(url);
+    const response = await fetch(url, { signal });
     if (!response.ok) {
       throw new Error(`API responded with status ${response.status}`);
     }
@@ -45,10 +46,15 @@ async function fetchTeamData(teamName) {
     return teamInfo;
     
   } catch (error) {
+    if (error && error.name === 'AbortError') {
+      console.log('[fetchTeamData] Request aborted due to new typing input');
+      return null;
+    }
     console.error('[fetchTeamData] Error fetching team data:', error);
     return null;
   }
 }
+
 
 /**
  * Normalize a team name for comparison and safe matching.
@@ -103,6 +109,32 @@ function shouldSkipSearchRequest(previousQuery, nextQuery) {
   return normalizeTeamName(previousQuery) === normalizeTeamName(nextQuery);
 }
 
+function createDebouncedSearch(searchFn, delayMs = 1000) {
+  let timeoutId = null;
+  let latestRequestId = 0;
+
+  return function debouncedSearch(query, ...args) {
+    const requestId = ++latestRequestId;
+
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+
+    timeoutId = setTimeout(async () => {
+      const currentRequestId = requestId;
+      const result = await searchFn(query, ...args);
+      return { result, requestId: currentRequestId };
+    }, delayMs);
+
+    return { requestId, cancel: () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+    }};
+  };
+}
+
 /**
  * Check if logo already exists in Supabase
  * @param {string} teamName - The team name
@@ -120,11 +152,10 @@ async function checkCachedLogo(teamName) {
 
     console.log(`[checkCachedLogo] Checking for cached logo: ${path}`);
 
-    // List files in the bucket to check if file exists
     const { data, error } = await window.supabaseClient.storage
       .from(HOF_LOGO_BUCKET)
       .list('', {
-        limit: 1,
+        limit: 100,
         search: safeTeamName
       });
 
@@ -133,15 +164,16 @@ async function checkCachedLogo(teamName) {
       return null;
     }
 
-    // Check if file exists
-    const fileExists = data && data.some(file => file.name === `${safeTeamName}.png`);
-    
-    if (fileExists) {
-      // Get public URL
+    const matchingFile = data && data.find(file => {
+      const name = (file && file.name) ? file.name.toLowerCase() : '';
+      return name === `${safeTeamName}.png` || name.startsWith(`${safeTeamName}.`);
+    });
+
+    if (matchingFile) {
       const { data: { publicUrl } } = window.supabaseClient.storage
         .from(HOF_LOGO_BUCKET)
-        .getPublicUrl(path);
-      
+        .getPublicUrl(matchingFile.name);
+
       console.log(`[checkCachedLogo] Cache hit! URL: ${publicUrl}`);
       return publicUrl;
     }
@@ -192,12 +224,7 @@ async function cacheTeamLogo(teamName, imageUrl) {
     const blob = await imageResponse.blob();
     console.log(`[cacheTeamLogo] Image downloaded, size: ${blob.size} bytes`);
 
-    // Upload to Supabase using same format as backend
-    // Format: hof_{timestamp}_{random}.{ext}
-    const timestamp = Date.now();
-    const random = Math.random().toString(36).substring(7);
-    const fileExt = 'png';
-    const fileName = `hof_${timestamp}_${random}.${fileExt}`;
+    const fileName = `${makeSafeTeamName(teamName)}.png`;
 
     console.log(`[cacheTeamLogo] Uploading to Supabase (profiles bucket): ${fileName}`);
 
@@ -205,7 +232,7 @@ async function cacheTeamLogo(teamName, imageUrl) {
       .from(HOF_LOGO_BUCKET)
       .upload(fileName, blob, {
         contentType: blob.type || 'image/png',
-        upsert: false
+        upsert: true
       });
 
     if (error) {
@@ -231,38 +258,39 @@ async function cacheTeamLogo(teamName, imageUrl) {
  * @param {string} teamName - The team name to search
  * @returns {Promise<{name: string, logo: string}|null>} Complete team info with cached logo URL
  */
-async function fetchAndCacheTeamLogo(teamName) {
+async function fetchAndCacheTeamLogo(teamName, options = {}) {
+  const { signal } = options;
+
   try {
     console.log(`[fetchAndCacheTeamLogo] Starting flow for: ${teamName}`);
 
-    // Check cache first
     const cachedUrl = await checkCachedLogo(teamName);
     
-    // Fetch team data from API
-    const teamData = await fetchTeamData(teamName);
+    const teamData = await fetchTeamData(teamName, { signal });
     
     if (!teamData) {
       console.log('[fetchAndCacheTeamLogo] Team not found in API');
       return null;
     }
 
-    // If we have cached logo, use it; otherwise cache the new one
     if (cachedUrl) {
       console.log('[fetchAndCacheTeamLogo] Using cached logo');
       teamData.logo = cachedUrl;
     } else if (teamData.logo) {
-      // Cache the logo
       const cachedLogoUrl = await cacheTeamLogo(teamData.name, teamData.logo);
       if (cachedLogoUrl) {
         teamData.logo = cachedLogoUrl;
       }
-      // If caching fails, still return the original URL as fallback
     }
 
     console.log('[fetchAndCacheTeamLogo] Complete result:', teamData);
     return teamData;
 
   } catch (error) {
+    if (error && error.name === 'AbortError') {
+      console.log('[fetchAndCacheTeamLogo] Search aborted');
+      return null;
+    }
     console.error('[fetchAndCacheTeamLogo] Error in complete flow:', error);
     return null;
   }
@@ -320,6 +348,7 @@ if (typeof window !== 'undefined') {
   window.makeSafeTeamName = makeSafeTeamName;
   window.buildManualTeamResult = buildManualTeamResult;
   window.shouldSkipSearchRequest = shouldSkipSearchRequest;
+  window.createDebouncedSearch = createDebouncedSearch;
   window.ensureHallOfFameBucket = ensureHallOfFameBucket;
 }
 
@@ -331,6 +360,7 @@ if (typeof globalThis !== 'undefined') {
   globalThis.makeSafeTeamName = makeSafeTeamName;
   globalThis.buildManualTeamResult = buildManualTeamResult;
   globalThis.shouldSkipSearchRequest = shouldSkipSearchRequest;
+  globalThis.createDebouncedSearch = createDebouncedSearch;
   globalThis.ensureHallOfFameBucket = ensureHallOfFameBucket;
 }
 
@@ -343,6 +373,7 @@ if (typeof module !== 'undefined' && module.exports) {
     makeSafeTeamName,
     buildManualTeamResult,
     shouldSkipSearchRequest,
+    createDebouncedSearch,
     ensureHallOfFameBucket,
     normalizeTeamName
   };

@@ -3234,6 +3234,60 @@ async function handleAddHallOfFame(e) {
     }
 }
 
+function setTeamLogoPreview(logoUrl, options = {}) {
+    const preview = document.getElementById('teamLogoPreview');
+    const img = preview ? preview.querySelector('img') : null;
+    const logoBtn = document.getElementById('hofTeamLogoBtn');
+    const statusEl = document.getElementById('hofTeamSearchStatus');
+
+    if (!preview || !img) {
+        return false;
+    }
+
+    if (!logoUrl) {
+        preview.style.display = 'none';
+        img.removeAttribute('src');
+        if (logoBtn) {
+            logoBtn.textContent = '📤 Manual Upload (Optional)';
+            logoBtn.style.opacity = '1';
+        }
+        if (statusEl && options.statusText) {
+            statusEl.innerHTML = options.statusText;
+        }
+        return false;
+    }
+
+    img.onerror = function() {
+        preview.style.display = 'none';
+        img.removeAttribute('src');
+        if (statusEl) {
+            statusEl.innerHTML = '⚠️ Team found — logo could not be loaded. You can upload one manually.';
+        }
+        if (logoBtn) {
+            logoBtn.textContent = '📤 Manual Upload (Optional)';
+            logoBtn.style.opacity = '1';
+        }
+    };
+
+    img.onload = function() {
+        if (statusEl && options.statusText) {
+            statusEl.innerHTML = options.statusText;
+        }
+    };
+
+    img.src = logoUrl;
+    img.alt = options.teamName ? `${options.teamName} logo` : 'Team logo';
+    preview.style.display = 'block';
+
+    if (logoBtn) {
+        const isManual = !!options.isManual;
+        logoBtn.textContent = isManual ? '📤 Manual Logo ✓' : '📥 Logo Auto-fetched ✓';
+        logoBtn.style.opacity = isManual ? '1' : '0.7';
+    }
+
+    return true;
+}
+
 // Image preview functionality
 document.addEventListener('DOMContentLoaded', function() {
     // Team logo preview
@@ -3244,9 +3298,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    const preview = document.getElementById('teamLogoPreview');
-                    preview.querySelector('img').src = e.target.result;
-                    preview.style.display = 'block';
+                    setTeamLogoPreview(e.target.result, {
+                        teamName: document.getElementById('hofTeam')?.value || document.getElementById('hofTeamSearch')?.value || 'Team',
+                        isManual: true,
+                        statusText: '✅ Manual logo loaded.'
+                    });
                 };
                 reader.readAsDataURL(file);
             }
@@ -3279,21 +3335,43 @@ document.addEventListener('DOMContentLoaded', function() {
     // Team search functionality
     const hofTeamSearch = document.getElementById('hofTeamSearch');
     if (hofTeamSearch) {
-        let searchTimeout;
+        let searchTimeout = null;
+        let activeRequestId = 0;
+        let activeController = null;
+
         hofTeamSearch.addEventListener('input', function(e) {
-            clearTimeout(searchTimeout);
-            const query = e.target.value.trim();
-            
+            const value = e.target.value;
+            const query = value.trim();
+
+            if (searchTimeout) {
+                clearTimeout(searchTimeout);
+                searchTimeout = null;
+            }
+
+            if (activeController) {
+                activeController.abort();
+                activeController = null;
+            }
+
             if (query.length < 2) {
+                activeRequestId += 1;
                 document.getElementById('hofTeamSearchResults').style.display = 'none';
                 document.getElementById('hofTeamSearchStatus').innerHTML = '';
                 return;
             }
 
-            document.getElementById('hofTeamSearchStatus').innerHTML = '🔍 Searching...';
+            const requestId = ++activeRequestId;
+            document.getElementById('hofTeamSearchStatus').innerHTML = '⏳ Waiting for team name...';
+
             searchTimeout = setTimeout(async () => {
-                await searchAndDisplayTeams(query);
-            }, 500);
+                if (requestId !== activeRequestId) {
+                    return;
+                }
+
+                const controller = new AbortController();
+                activeController = controller;
+                await searchAndDisplayTeams(query, { requestId, signal: controller.signal });
+            }, 1000);
         });
 
         // Close results when clicking outside
@@ -3321,10 +3399,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    const preview = document.getElementById('teamLogoPreview');
-                    preview.querySelector('img').src = e.target.result;
-                    preview.style.display = 'block';
-                    document.getElementById('hofTeamLogoBtn').textContent = '📤 Manual Logo ✓';
+                    setTeamLogoPreview(e.target.result, {
+                        teamName: document.getElementById('hofTeam')?.value || document.getElementById('hofTeamSearch')?.value || 'Team',
+                        isManual: true,
+                        statusText: '✅ Manual logo loaded.'
+                    });
                 };
                 reader.readAsDataURL(file);
             }
@@ -3335,12 +3414,18 @@ document.addEventListener('DOMContentLoaded', function() {
 /**
  * Search for teams and display results
  */
-async function searchAndDisplayTeams(query) {
+async function searchAndDisplayTeams(query, options = {}) {
+    const { requestId, signal } = options;
+
     try {
         console.log(`[searchAndDisplayTeams] Searching for: ${query}`);
         document.getElementById('hofTeamSearchStatus').innerHTML = '🔍 Searching teams...';
 
-        const teamData = await window.fetchAndCacheTeamLogo(query);
+        const teamData = await window.fetchAndCacheTeamLogo(query, { signal });
+
+        if (requestId && requestId !== Number(document.getElementById('hofTeamSearch')?.dataset?.activeRequestId || requestId)) {
+            return;
+        }
 
         if (teamData) {
             const resultsDiv = document.getElementById('hofTeamSearchResults');
@@ -3354,13 +3439,23 @@ async function searchAndDisplayTeams(query) {
                 </div>
             `;
             resultsDiv.style.display = 'block';
-            document.getElementById('hofTeamSearchStatus').innerHTML = '✅ Team found!';
+
+            const inputValue = document.getElementById('hofTeamSearch').value;
+            if (inputValue.trim() && inputValue.trim() === query) {
+                selectTeamForHallOfFame(inputValue.trim(), teamData.logo, '✅ Team found — logo loaded.');
+            } else {
+                selectTeamForHallOfFame(teamData.name, teamData.logo, '✅ Team found — logo loaded.');
+            }
         } else {
             document.getElementById('hofTeamSearchResults').innerHTML = '<div style="padding: 12px; text-align: center; color: #666;">❌ Team not found</div>';
             document.getElementById('hofTeamSearchResults').style.display = 'block';
             document.getElementById('hofTeamSearchStatus').innerHTML = '❌ No teams found. Try another name or use manual upload.';
         }
     } catch (error) {
+        if (error && error.name === 'AbortError') {
+            console.log('[searchAndDisplayTeams] Search aborted due to new input');
+            return;
+        }
         console.error('[searchAndDisplayTeams] Error:', error);
         document.getElementById('hofTeamSearchStatus').innerHTML = '⚠️ Search error. Try manual upload.';
     }
@@ -3369,26 +3464,25 @@ async function searchAndDisplayTeams(query) {
 /**
  * Select a team for Hall of Fame
  */
-async function selectTeamForHallOfFame(teamName, logoUrl) {
+function selectTeamForHallOfFame(teamName, logoUrl, statusText = '✅ Team found!') {
     console.log(`[selectTeamForHallOfFame] Selected: ${teamName}`);
 
-    // Set the hidden team field
     document.getElementById('hofTeam').value = teamName;
     document.getElementById('hofTeamSearch').value = teamName;
-
-    // Hide results
     document.getElementById('hofTeamSearchResults').style.display = 'none';
-    document.getElementById('hofTeamSearchStatus').innerHTML = '';
 
-    // Show logo preview if available
     if (logoUrl) {
-        const preview = document.getElementById('teamLogoPreview');
-        if (preview) {
-            preview.querySelector('img').src = logoUrl;
-            preview.style.display = 'block';
-            document.getElementById('hofTeamLogoBtn').textContent = '📥 Logo Auto-fetched ✓';
-            document.getElementById('hofTeamLogoBtn').style.opacity = '0.7';
-        }
+        setTeamLogoPreview(logoUrl, {
+            teamName,
+            isManual: false,
+            statusText
+        });
+    } else {
+        setTeamLogoPreview(null, {
+            teamName,
+            statusText: '⚠️ Team found — no logo available. You can upload one manually.'
+        });
+        document.getElementById('hofTeamSearchStatus').innerHTML = '⚠️ Team found — no logo available. You can upload one manually.';
     }
 
     console.log(`[selectTeamForHallOfFame] Team auto-filled with logo from TheSportsDB`);
