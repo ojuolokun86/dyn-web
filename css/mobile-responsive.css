@@ -99,7 +99,6 @@ body {
 
     /* Hero */
     .hero {
-        /* allow content below video to show */
         height: auto;
         min-height: 60vh;
         display: flex;
@@ -107,6 +106,8 @@ body {
         justify-content: center;
         text-align: center;
         overflow: visible;
+        background-position: center center;
+        background-size: cover;
     }
     .hero-content h1 { font-size: 2rem; }
     .hero-content p { font-size: 1rem; }
