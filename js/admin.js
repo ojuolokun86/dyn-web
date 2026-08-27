@@ -621,11 +621,21 @@ async function loadContenderSources() {
 
 function selectContenderSource(source) {
     selectedContenderSource = source;
-    document.getElementById('contenderName').value = source.name || '';
-    document.getElementById('contenderDescription').value = source.description || '';
-    document.getElementById('contenderClass').value = source.class || '';
-    document.getElementById('contenderCountry').value = source.country || '';
-    document.getElementById('contenderEmail').value = source.email || '';
+    const setField = (id, value) => {
+        const field = document.getElementById(id);
+        if (field) field.value = value || '';
+    };
+    setField('contenderName', source.name);
+    setField('contenderDescription', source.description);
+    setField('contenderClass', source.class);
+    setField('contenderCountry', source.country);
+    setField('contenderEmail', source.email);
+    const picturePreview = document.getElementById('picturePreview');
+    if (picturePreview) {
+        picturePreview.innerHTML = source.picture
+            ? `<div class="preview-item"><img src="${escapeHtml(source.picture)}" alt="${escapeHtml(source.name)} profile" style="max-height: 160px; max-width: 160px; object-fit: cover;"><p>Saved profile picture</p></div>`
+            : '<p class="empty-state">No saved profile picture</p>';
+    }
     document.getElementById('contenderSourceResults').innerHTML = `<p class="message success">Selected: ${escapeHtml(source.name)}</p>`;
 }
 
