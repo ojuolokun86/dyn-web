@@ -206,7 +206,7 @@ async function renderPastWinnersSlideshow(col) {
             });
 
             col.innerHTML = `
-                <div class="section-title">🏆 LAST SEASON WINNER</div>
+                <div class="section-title">🏆 EVENT WINNERS</div>
                 <div class="gold-underline"></div>
                 <div class="section-subtitle">Ballon D'or Champion</div>
                 <div class="past-winner-container">
@@ -268,7 +268,7 @@ async function renderPastWinnersSlideshow(col) {
             col._pwInterval = interval;
         } else {
             col.innerHTML = `
-                <div class="section-title">🏆 LAST SEASON WINNER</div>
+                <div class="section-title">🏆 EVENT WINNERS</div>
                 <div class="gold-underline"></div>
                 <div class="section-subtitle">Ballon D'or Champion</div>
                 <div class="glass-card">
@@ -281,7 +281,7 @@ async function renderPastWinnersSlideshow(col) {
     } catch (error) {
         console.error('❌ [ERROR] renderPastWinnersSlideshow failed:', error);
         col && (col.innerHTML = `
-            <div class="section-title">🏆 LAST SEASON WINNER</div>
+            <div class="section-title">🏆 EVENT WINNERS</div>
             <div class="gold-underline"></div>
             <div class="section-subtitle">Ballon D'or Champion</div>
             <div class="glass-card">
