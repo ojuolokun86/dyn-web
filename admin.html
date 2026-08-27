@@ -334,6 +334,22 @@
                             </select>
                         </div>
 
+                        <div class="form-group">
+                            <label for="contenderSourceType">Person Source *</label>
+                            <select id="contenderSourceType" required>
+                                <option value="new">New User</option>
+                                <option value="user">Existing User</option>
+                                <option value="previous">Previous Contender</option>
+                                <option value="hall_of_fame">Hall of Fame</option>
+                            </select>
+                        </div>
+
+                        <div id="contenderSourcePicker" class="form-group hidden">
+                            <label for="contenderSourceSearch">Search person</label>
+                            <input type="search" id="contenderSourceSearch" placeholder="Search by name or email">
+                            <div id="contenderSourceResults" class="list-view"></div>
+                        </div>
+
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="contenderName">Contender Name *</label>
@@ -341,18 +357,18 @@
                             </div>
                             <div class="form-group">
                                 <label for="contenderClass">Class/Category *</label>
-                                <input type="text" id="contenderClass" placeholder="e.g., eFootball Player, Pro Striker" required>
+                                <input type="text" id="contenderClass" placeholder="e.g., eFootball Player, Pro Striker">
                             </div>
                         </div>
 
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="contenderEmail">Email Address *</label>
-                                <input type="email" id="contenderEmail" placeholder="player@example.com" required>
+                                <input type="email" id="contenderEmail" placeholder="player@example.com">
                             </div>
                             <div class="form-group">
                                 <label for="contenderCountry">Country/Region *</label>
-                                <input type="text" id="contenderCountry" placeholder="e.g., Nigeria, USA, UK" required>
+                                <input type="text" id="contenderCountry" placeholder="e.g., Nigeria, USA, UK">
                             </div>
                         </div>
 

@@ -151,6 +151,7 @@ let dashboardState = {
     selectedSection: 'overview',
     pointTableValues: {} // Store default_points for each point table
 };
+let selectedContenderSource = null;
 
 // Initialize Dashboard
 document.addEventListener('DOMContentLoaded', async () => {
@@ -230,6 +231,8 @@ function setupEventListeners() {
 
     // Forms
     document.getElementById('contenderForm')?.addEventListener('submit', handleAddContender);
+    document.getElementById('contenderSourceType')?.addEventListener('change', handleContenderSourceTypeChange);
+    document.getElementById('contenderSourceSearch')?.addEventListener('input', loadContenderSources);
     document.getElementById('eventForm')?.addEventListener('submit', handleCreateEvent);
     document.getElementById('eventVoteForm')?.addEventListener('submit', handleCreateVoteTables);
     document.getElementById('eventVoteFormInline')?.addEventListener('submit', handleCreateVoteTablesInline);
@@ -454,21 +457,6 @@ async function handleAddContender(e) {
         return;
     }
 
-    if (!contenderClass.trim()) {
-        showMessage('contenderMessage', 'Class/Category is required!', 'error');
-        return;
-    }
-
-    if (!country.trim()) {
-        showMessage('contenderMessage', 'Country/Region is required!', 'error');
-        return;
-    }
-
-    if (!email.trim()) {
-        showMessage('contenderMessage', 'Email is required!', 'error');
-        return;
-    }
-
     const messageDiv = document.getElementById('contenderMessage');
     
     try {
@@ -483,7 +471,10 @@ async function handleAddContender(e) {
                 description,
                 class: contenderClass,
                 country,
-                email
+                email,
+                profileId: selectedContenderSource?.profile_id || null,
+                sourceType: selectedContenderSource?.source_type || null,
+                sourceId: selectedContenderSource?.source_id || null
             })
         });
 
@@ -556,8 +547,11 @@ async function handleAddContender(e) {
             document.getElementById('contenderForm').reset();
             selectedPictures = [];
             selectedVideos = [];
+            selectedContenderSource = null;
             document.getElementById('picturePreview').innerHTML = '';
             document.getElementById('videoPreview').innerHTML = '';
+            document.getElementById('contenderSourceType').value = 'new';
+            handleContenderSourceTypeChange();
             
             // Refresh the contenders list to show the new entry with database values
             await fetchAllContenders();
@@ -571,6 +565,68 @@ async function handleAddContender(e) {
         console.error('❌ Error adding contender:', error);
         messageDiv.innerHTML = `<div class="message error">❌ Error: ${error.message}</div>`;
     }
+}
+
+function handleContenderSourceTypeChange() {
+    const type = document.getElementById('contenderSourceType')?.value || 'new';
+    const picker = document.getElementById('contenderSourcePicker');
+    const results = document.getElementById('contenderSourceResults');
+    selectedContenderSource = null;
+
+    if (type === 'new') {
+        picker?.classList.add('hidden');
+        if (results) results.innerHTML = '';
+        return;
+    }
+
+    picker?.classList.remove('hidden');
+    if (results) results.innerHTML = '<p class="empty-state">Loading people...</p>';
+    loadContenderSources();
+}
+
+async function loadContenderSources() {
+    const type = document.getElementById('contenderSourceType')?.value || 'new';
+    const results = document.getElementById('contenderSourceResults');
+    if (!results || type === 'new') return;
+
+    try {
+        const token = localStorage.getItem('adminToken');
+        const search = document.getElementById('contenderSourceSearch')?.value || '';
+        const response = await fetch(`${API_BASE_URL}/events/contender-sources?type=${encodeURIComponent(type)}&search=${encodeURIComponent(search)}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        const result = await response.json();
+        const sources = result.success ? result.data : [];
+
+        if (!sources.length) {
+            results.innerHTML = '<p class="empty-state">No matching people found</p>';
+            return;
+        }
+
+        results.innerHTML = sources.map((source, index) => `
+            <button type="button" class="btn btn-secondary contender-source-option" data-source-index="${index}" style="display:block; width:100%; text-align:left; margin-top:8px;">
+                <strong>${escapeHtml(source.name)}</strong>
+                <span>${escapeHtml(source.email || source.class || 'Saved profile')}</span>
+            </button>
+        `).join('');
+
+        results.querySelectorAll('.contender-source-option').forEach((button, index) => {
+            button.addEventListener('click', () => selectContenderSource(sources[index]));
+        });
+    } catch (error) {
+        console.error('Error loading contender sources:', error);
+        results.innerHTML = '<p class="empty-state">Unable to load people</p>';
+    }
+}
+
+function selectContenderSource(source) {
+    selectedContenderSource = source;
+    document.getElementById('contenderName').value = source.name || '';
+    document.getElementById('contenderDescription').value = source.description || '';
+    document.getElementById('contenderClass').value = source.class || '';
+    document.getElementById('contenderCountry').value = source.country || '';
+    document.getElementById('contenderEmail').value = source.email || '';
+    document.getElementById('contenderSourceResults').innerHTML = `<p class="message success">Selected: ${escapeHtml(source.name)}</p>`;
 }
 
 function loadContendersList() {
