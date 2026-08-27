@@ -675,7 +675,8 @@
                 top: -9999px;
                 left: -9999px;
                 width: 1080px;
-                height: 1080px;
+                min-height: 1080px;
+                height: auto;
                 padding: 40px;
                 background: #ffffff;
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -683,7 +684,7 @@
                 display: flex;
                 flex-direction: column;
                 box-sizing: border-box;
-                overflow: hidden;
+                overflow: visible;
             `;
             
             // Header
@@ -700,92 +701,76 @@
             `;
             container.appendChild(header);
             
-            // Grid container for league cards
+            // Rank every person globally by total Hall of Fame wins.
             const gridContainer = document.createElement('div');
             gridContainer.style.cssText = `
-                display: grid;
-                grid-template-columns: repeat(2, 1fr);
-                gap: 20px;
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
                 flex: 1;
-                overflow-y: auto;
-                padding-right: 5px;
             `;
-            
-            // Loop through leagues and create cards
+
+            const people = new Map();
             for (const [leagueName, players] of Object.entries(hallOfFameData)) {
+                for (const [playerName, playerData] of Object.entries(players)) {
+                    const key = playerName.trim().toLowerCase();
+                    if (!people.has(key)) {
+                        people.set(key, {
+                            name: playerName,
+                            image: playerData.player_image || '',
+                            wins: []
+                        });
+                    }
+                    const person = people.get(key);
+                    if (!person.image && playerData.player_image) person.image = playerData.player_image;
+                    playerData.wins.forEach(win => person.wins.push({ ...win, league: leagueName }));
+                }
+            }
+
+            const rankedPeople = Array.from(people.values()).sort((a, b) => {
+                return b.wins.length - a.wins.length || a.name.localeCompare(b.name);
+            });
+
+            rankedPeople.forEach((person, index) => {
                 const card = document.createElement('div');
                 card.style.cssText = `
-                    background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
-                    border: 2px solid #FFD700;
+                    background: ${index % 2 === 0 ? '#fffdf2' : '#f7f9fc'};
+                    border: 1px solid #e5c542;
                     border-radius: 12px;
-                    padding: 18px;
+                    padding: 16px 20px;
                     display: flex;
-                    flex-direction: column;
-                    gap: 12px;
+                    align-items: flex-start;
+                    gap: 16px;
                 `;
-                
-                // League Title
-                const leagueTitle = document.createElement('div');
-                leagueTitle.style.cssText = `
-                    font-size: 24px;
-                    font-weight: bold;
-                    color: #667eea;
-                    border-bottom: 2px solid #FFD700;
-                    padding-bottom: 10px;
-                    margin: 0;
-                `;
-                leagueTitle.textContent = `🏆 ${leagueName}`;
-                card.appendChild(leagueTitle);
-                
-                // Players in this league
-                const playersContainer = document.createElement('div');
-                playersContainer.style.cssText = `
-                    display: flex;
-                    flex-direction: column;
-                    gap: 10px;
-                `;
-                
-                for (const [playerName, playerData] of Object.entries(players)) {
-                    const winCount = playerData.wins.length;
-                    
-                    // Player entry
-                    const playerEntry = document.createElement('div');
-                    playerEntry.style.cssText = `
-                        font-size: 14px;
-                        line-height: 1.4;
-                    `;
-                    
-                    // Player name with win count
-                    const playerNameDiv = document.createElement('div');
-                    playerNameDiv.style.cssText = `
-                        font-weight: bold;
-                        color: #1a1a1a;
-                        font-size: 16px;
-                        margin-bottom: 4px;
-                    `;
-                    playerNameDiv.innerHTML = `${escapeHtml(playerName)} <span style="color: #FFD700;">(${winCount}x)</span>`;
-                    playerEntry.appendChild(playerNameDiv);
-                    
-                    // Teams for this player
-                    playerData.wins.forEach(win => {
-                        const teamLine = document.createElement('div');
-                        teamLine.style.cssText = `
-                            color: #555;
-                            font-size: 13px;
-                            margin-left: 15px;
-                            padding-left: 8px;
-                            border-left: 2px solid #FFD700;
-                        `;
-                        teamLine.innerHTML = `${escapeHtml(win.team_name)} – S${win.season}`;
-                        playerEntry.appendChild(teamLine);
-                    });
-                    
-                    playersContainer.appendChild(playerEntry);
-                }
-                
-                card.appendChild(playersContainer);
+
+                const rank = document.createElement('div');
+                rank.style.cssText = 'font-size: 24px; min-width: 34px; color: #c99600; font-weight: 900;';
+                rank.textContent = `${index + 1}`;
+                card.appendChild(rank);
+
+                const details = document.createElement('div');
+                details.style.cssText = 'flex: 1; min-width: 0;';
+
+                const name = document.createElement('div');
+                name.style.cssText = 'font-weight: 800; color: #1a1a1a; font-size: 20px; margin-bottom: 4px;';
+                name.textContent = person.name;
+                details.appendChild(name);
+
+                const trophies = document.createElement('div');
+                trophies.style.cssText = 'color: #b37b00; font-size: 18px; letter-spacing: 2px; margin-bottom: 8px;';
+                trophies.textContent = '🏆'.repeat(person.wins.length);
+                details.appendChild(trophies);
+
+                person.wins.forEach(win => {
+                    const eventLine = document.createElement('div');
+                    eventLine.style.cssText = 'color: #555; font-size: 13px; line-height: 1.5; padding-left: 10px; border-left: 2px solid #FFD700;';
+                    eventLine.textContent = `${win.league} - Season ${win.season}`;
+                    details.appendChild(eventLine);
+                });
+
+                card.appendChild(details);
                 gridContainer.appendChild(card);
-            }
+            });
             
             container.appendChild(gridContainer);
             
