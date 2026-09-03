@@ -5,7 +5,8 @@
  */
 
 const THESPORTSDB_API_BASE = 'https://www.thesportsdb.com/api/v1/json/123';
-const HOF_LOGO_BUCKET = 'profiles';  // Use existing profiles bucket
+const HOF_LOGO_BUCKET = 'profiles';
+const teamLogoMemoryCache = new Map();
 
 /**
  * Fetch team data from TheSportsDB API (via backend)
@@ -142,45 +143,36 @@ function createDebouncedSearch(searchFn, delayMs = 1000) {
  */
 async function checkCachedLogo(teamName) {
   try {
-    if (!window.supabaseClient) {
-      console.log('[checkCachedLogo] Supabase client not initialized');
-      return null;
-    }
-
     const safeTeamName = makeSafeTeamName(teamName);
-    const path = `${safeTeamName}.png`;
+    const cached = teamLogoMemoryCache.get(safeTeamName);
+    if (cached) {
+      console.log('[checkCachedLogo] In-memory cache hit:', cached);
+      return cached;
+    }
 
-    console.log(`[checkCachedLogo] Checking for cached logo: ${path}`);
-
-    const { data, error } = await window.supabaseClient.storage
-      .from(HOF_LOGO_BUCKET)
-      .list('', {
-        limit: 100,
-        search: safeTeamName
-      });
-
-    if (error) {
-      console.warn('[checkCachedLogo] Error listing files:', error);
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      console.log('[checkCachedLogo] No admin token available for protected cache lookup');
       return null;
     }
 
-    const matchingFile = data && data.find(file => {
-      const name = (file && file.name) ? file.name.toLowerCase() : '';
-      return name === `${safeTeamName}.png` || name.startsWith(`${safeTeamName}.`);
+    const response = await fetch(`${window.API_BASE_URL}/admin/cached-team-logo?teamName=${encodeURIComponent(teamName)}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
     });
 
-    if (matchingFile) {
-      const { data: { publicUrl } } = window.supabaseClient.storage
-        .from(HOF_LOGO_BUCKET)
-        .getPublicUrl(matchingFile.name);
-
-      console.log(`[checkCachedLogo] Cache hit! URL: ${publicUrl}`);
-      return publicUrl;
+    if (response.status === 404) {
+      console.log(`[checkCachedLogo] No cached logo found for: ${teamName}`);
+      return null;
     }
 
-    console.log(`[checkCachedLogo] No cached logo found for: ${teamName}`);
-    return null;
+    const result = await response.json();
+    if (!response.ok || !result.success || !result.url) {
+      throw new Error(result.error || 'Failed to check cached team logo');
+    }
 
+    teamLogoMemoryCache.set(safeTeamName, result.url);
+    console.log('[checkCachedLogo] Persistent cache hit:', result.url);
+    return result.url;
   } catch (error) {
     console.error('[checkCachedLogo] Error checking cached logo:', error);
     return null;
@@ -195,61 +187,41 @@ async function checkCachedLogo(teamName) {
  */
 async function cacheTeamLogo(teamName, imageUrl) {
   try {
-    if (!window.supabaseClient) {
-      console.error('[cacheTeamLogo] Supabase client not initialized');
-      return null;
-    }
-
-    if (!imageUrl) {
-      console.warn('[cacheTeamLogo] No image URL provided');
-      return null;
-    }
-
-    console.log(`[cacheTeamLogo] Caching logo for ${teamName}: ${imageUrl}`);
-
-    // Check if already cached
-    const cachedUrl = await checkCachedLogo(teamName);
+    const safeTeamName = makeSafeTeamName(teamName);
+    const cachedUrl = teamLogoMemoryCache.get(safeTeamName);
     if (cachedUrl) {
       console.log('[cacheTeamLogo] Logo already cached, reusing');
       return cachedUrl;
     }
 
-    // Download the image
-    console.log('[cacheTeamLogo] Downloading image...');
-    const imageResponse = await fetch(imageUrl);
-    if (!imageResponse.ok) {
-      throw new Error(`Failed to download image: ${imageResponse.status}`);
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      console.warn('[cacheTeamLogo] No admin token available for protected backend caching');
+      return imageUrl || null;
     }
 
-    const blob = await imageResponse.blob();
-    console.log(`[cacheTeamLogo] Image downloaded, size: ${blob.size} bytes`);
+    console.log(`[cacheTeamLogo] Sending protected cache request for ${teamName}`);
+    const response = await fetch(`${window.API_BASE_URL}/admin/cache-team-logo`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ teamName })
+    });
 
-    const fileName = `${makeSafeTeamName(teamName)}.png`;
-
-    console.log(`[cacheTeamLogo] Uploading to Supabase (profiles bucket): ${fileName}`);
-
-    const { data, error } = await window.supabaseClient.storage
-      .from(HOF_LOGO_BUCKET)
-      .upload(fileName, blob, {
-        contentType: blob.type || 'image/png',
-        upsert: true
-      });
-
-    if (error) {
-      throw new Error(`Upload failed: ${error.message}`);
+    const result = await response.json();
+    if (!response.ok || !result.success || !result.url) {
+      throw new Error(result.error || 'Failed to cache team logo');
     }
 
-    // Get public URL
-    const { data: { publicUrl } } = window.supabaseClient.storage
-      .from(HOF_LOGO_BUCKET)
-      .getPublicUrl(fileName);
-
-    console.log(`[cacheTeamLogo] Success! Public URL: ${publicUrl}`);
-    return publicUrl;
+    teamLogoMemoryCache.set(safeTeamName, result.url);
+    console.log(`[cacheTeamLogo] Success! Public URL: ${result.url}`);
+    return result.url;
 
   } catch (error) {
     console.error('[cacheTeamLogo] Error caching logo:', error);
-    return null;
+    return imageUrl || null;
   }
 }
 
@@ -265,9 +237,8 @@ async function fetchAndCacheTeamLogo(teamName, options = {}) {
     console.log(`[fetchAndCacheTeamLogo] Starting flow for: ${teamName}`);
 
     const cachedUrl = await checkCachedLogo(teamName);
-    
     const teamData = await fetchTeamData(teamName, { signal });
-    
+
     if (!teamData) {
       console.log('[fetchAndCacheTeamLogo] Team not found in API');
       return null;
@@ -296,47 +267,9 @@ async function fetchAndCacheTeamLogo(teamName, options = {}) {
   }
 }
 
-/**
- * Create bucket if it doesn't exist
- * Called during initialization
- */
 async function ensureHallOfFameBucket() {
-  try {
-    if (!window.supabaseClient) {
-      console.log('[ensureHallOfFameBucket] Supabase client not initialized');
-      return false;
-    }
-
-    console.log(`[ensureHallOfFameBucket] Ensuring bucket exists: ${HOF_LOGO_BUCKET}`);
-
-    // Try to list files - this will fail if bucket doesn't exist or we don't have access
-    const { error } = await window.supabaseClient.storage
-      .from(HOF_LOGO_BUCKET)
-      .list('', { limit: 1 });
-
-    if (error) {
-      console.warn(`[ensureHallOfFameBucket] Bucket check failed: ${error.message}`);
-      // Bucket might not exist or we don't have permission
-      return false;
-    }
-
-    console.log('[ensureHallOfFameBucket] Bucket ready');
-    return true;
-
-  } catch (error) {
-    console.error('[ensureHallOfFameBucket] Error:', error);
-    return false;
-  }
-}
-
-// Initialize on script load
-if (typeof document !== 'undefined') {
-  document.addEventListener('DOMContentLoaded', async () => {
-    // Ensure bucket is accessible
-    if (window.supabaseClient) {
-      await ensureHallOfFameBucket();
-    }
-  });
+  console.log('[ensureHallOfFameBucket] Browser-side storage check skipped; caching is server-side only.');
+  return true;
 }
 
 // Make functions globally available

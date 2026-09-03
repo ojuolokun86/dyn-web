@@ -18,63 +18,6 @@ const url = isLocalFrontend ? defaultLocalUrl : defaultProductionUrl;
 const API_BASE_URL = `${url}/api`;
 const BACKEND_URL = url;
 const BACKEND_TIMEOUT = 5000; // 5 seconds
-// Supabase configuration - set these values to enable direct uploads
-const SUPABASE_URL = 'https://wjpelhrjclljpgqeavyp.supabase.co'; // e.g. https://xyzcompany.supabase.co
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndqcGVsaHJqY2xsanBncWVhdnlwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0Mjg4NTk2MSwiZXhwIjoyMDU4NDYxOTYxfQ.sE6jO-2Ct0uzDecE84zvEq2b-ENgDZudJejdA50ovGo'; // anon/public key
-
-// Supabase client (will be initialized if library present and keys set)
-window.supabaseClient = null;
-
-// Default buckets used by the UI
-const SUPABASE_BUCKET_PROFILES = 'profiles';
-const SUPABASE_BUCKET_VIDEOS = 'videos';
-
-function initSupabaseClient() {
-    try {
-        if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
-        if (window.supabase && typeof window.supabase.createClient === 'function') {
-            window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            console.info('Supabase client initialized');
-            return window.supabaseClient;
-        }
-    } catch (err) {
-        console.error('Failed to init Supabase client:', err);
-    }
-    return null;
-}
-
-// Try to initialize Supabase client on load (if the lib has been included and keys set)
-if (typeof window !== 'undefined') {
-    // Defer to DOMContentLoaded in case CDN script loads slightly after
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initSupabaseClient);
-    } else {
-        initSupabaseClient();
-    }
-}
-
-// Upload helper: uploads a File to a Supabase storage bucket and returns the stored object path
-async function uploadToSupabase(bucket, path, file, opts = { upsert: true }) {
-    if (!window.supabaseClient) {
-        throw new Error('Supabase client not initialized');
-    }
-
-    const storage = window.supabaseClient.storage;
-    const { data, error } = await storage.from(bucket).upload(path, file, { upsert: opts.upsert });
-    if (error) throw error;
-
-    // Return the object path; caller can request a signed URL for private buckets
-    return data?.path || null;
-}
-
-// Create a signed URL for a private object. Returns a signed URL string.
-async function createSupabaseSignedUrl(bucket, path, expiresIn = 3600) {
-    if (!window.supabaseClient) throw new Error('Supabase client not initialized');
-    const storage = window.supabaseClient.storage;
-    const { data, error } = await storage.from(bucket).createSignedUrl(path, expiresIn);
-    if (error) throw error;
-    return data?.signedUrl || null;
-}
 
 /**
  * Check if backend server is running
@@ -254,11 +197,4 @@ if (typeof window !== 'undefined') {
     window.BACKEND_URL = BACKEND_URL;
     window.isBackendRunning = isBackendRunning;
     window.fetchAPI = fetchAPI;
-    // Expose Supabase helpers and bucket names to other scripts
-    window.uploadToSupabase = typeof uploadToSupabase === 'function' ? uploadToSupabase : undefined;
-    window.createSupabaseSignedUrl = typeof createSupabaseSignedUrl === 'function' ? createSupabaseSignedUrl : undefined;
-    window.SUPABASE_BUCKET_PROFILES = typeof SUPABASE_BUCKET_PROFILES !== 'undefined' ? SUPABASE_BUCKET_PROFILES : 'profiles';
-    window.SUPABASE_BUCKET_VIDEOS = typeof SUPABASE_BUCKET_VIDEOS !== 'undefined' ? SUPABASE_BUCKET_VIDEOS : 'videos';
-    window.SUPABASE_URL = typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : '';
-    window.SUPABASE_ANON_KEY = typeof SUPABASE_ANON_KEY !== 'undefined' ? SUPABASE_ANON_KEY : '';
 }

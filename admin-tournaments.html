@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en" class="tournament-admin-page">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Tournaments - 🏆 DYNAMIC EFOOTBALL COMMUNITY</title>
+  <link rel="stylesheet" href="css/admin-dashboard.css">
+  <link rel="stylesheet" href="css/mobile-responsive.css">
+  <link rel="stylesheet" href="css/tournament.css">
+  <link rel="stylesheet" href="css/admin-tournaments.css">
+</head>
+<body class="tournament-admin-page">
+  <div class="tournament-admin-shell">
+    <header class="tournament-admin-header">
+      <div>
+        <p class="tournament-kicker">🏆 DYNAMIC EFOOTBALL COMMUNITY</p>
+        <h1>Tournament management</h1>
+        <p>Build a free community tournament, approve players, and run each round.</p>
+      </div>
+      <div class="tournament-detail-header-actions">
+        <button id="new-tournament-button" class="tournament-button" type="button">+ New tournament</button>
+        <a class="tournament-button ghost" href="admin.html">← Admin dashboard</a>
+      </div>
+    </header>
+    <main class="tournament-admin-main">
+      <section id="tournament-create-panel" class="tournament-panel" hidden>
+        <div class="tournament-panel-header"><div><p class="tournament-kicker">New competition</p><h2>Create tournament</h2></div></div>
+        <form id="tournament-form" class="tournament-form">
+          <label>Tournament name<input name="name" placeholder="e.g. DYN Champions League Season 6" required></label>
+          <label>Description<textarea name="description" placeholder="Tell participants what to expect"></textarea></label>
+          <div class="form-grid">
+            <label>Tournament format<select name="format_type" id="format-type-select"><option value="knockout">Knockout (Single Elimination)</option><option value="league">League (Round-Robin)</option><option value="group_knockout">Groups + Knockout</option><option value="league_phase_knockout">League Phase + Knockout</option></select></label>
+            <label>Max teams<input name="participant_limit" type="number" min="2" value="8" required></label>
+            <label>Tournament source<select name="source_type" id="source-type-select"><option value="custom">Custom tournament</option><option value="league_category">League category</option></select></label>
+            <label id="category-select-field" hidden>League category<select name="category_id" id="category-select"><option value="">Select a category</option></select></label>
+            <label>Starts<input name="starts_at" type="datetime-local"></label>
+            <label>Ends<input name="ends_at" type="datetime-local"></label>
+            <label>Registration opens<input name="registration_opens_at" type="datetime-local"></label>
+            <label>Registration closes<input name="registration_closes_at" type="datetime-local"></label>
+          </div>
+          <div id="format-options" class="format-options" hidden>
+            <fieldset><legend>Format Configuration</legend>
+              <div id="group-fields" class="format-section" hidden><h3>Groups</h3><label>Number of groups<input name="group_count" type="number" min="1" value="2"></label><label>Teams per group (optional)<input name="teams_per_group" type="number" min="2" value=""></label></div>
+              <div id="league-fields" class="format-section" hidden><h3>League phase</h3><label>Matches per team<input name="matches_per_team" type="number" min="1" value="3"></label><label><input name="home_away" type="checkbox"> Home and away fixtures</label></div>
+              <div id="pot-fields" class="format-section" hidden><h3>Seeded pots</h3><label>Number of seeded pots<input name="seeded_pots" type="number" min="1" value="4"></label><label>Teams per pot<input name="teams_per_pot" type="number" min="1" value=""></label></div>
+              <div id="qualification-fields" class="format-section" hidden><h3>Qualification</h3><label>Direct qualifiers<input name="direct_qualifiers" type="number" min="0" value="0"></label><label>Playoff qualifiers<input name="playoff_qualifiers" type="number" min="0" value="0"></label><label>Tie-breaker order (JSON array)<textarea name="tie_breakers" rows="2">["points","goal_difference","goals_for","participant_id"]</textarea></label><label>Qualification bands (JSON array)<textarea name="qualification_bands" placeholder='[{"band":"direct","from_rank":1,"to_rank":4,"destination_stage":"round_of_8","status":"qualified"}]' rows="5"></textarea></label></div>
+            </fieldset>
+          </div>
+          <label>Prize information<input name="prize_info" placeholder="Optional information for participants"></label>
+          <label>Rules<textarea name="rules" placeholder="Tournament rules"></textarea></label>
+          <div class="tournament-form-actions"><button class="tournament-button" type="submit">Create tournament</button><button type="button" class="tournament-button ghost" id="cancel-tournament-create">Cancel</button><span id="form-status" role="status"></span></div>
+        </form>
+      </section>
+      <section class="tournament-panel">
+        <div class="tournament-panel-header">
+          <div>
+            <p class="tournament-kicker">Tournament list</p>
+            <h2>All tournaments</h2>
+          </div>
+          <button id="refresh-admin-tournaments" class="tournament-button ghost" type="button">↻ Refresh</button>
+        </div>
+        <div id="admin-tournaments" class="admin-tournament-list" aria-live="polite" aria-busy="true"><div class="tournament-state">Loading tournaments...</div></div>
+      </section>
+    </main>
+  </div>
+  <script src="js/api-config.js"></script>
+  <script src="js/team-search.js"></script>
+  <script src="js/admin-tournaments.js"></script>
+</body>
+</html>

@@ -221,7 +221,7 @@ function showSuperadminUIIfNeeded() {
 // Setup Event Listeners
 function setupEventListeners() {
     // Sidebar navigation
-    document.querySelectorAll('.nav-item').forEach(item => {
+    document.querySelectorAll('.nav-item[data-section]').forEach(item => {
         item.addEventListener('click', (e) => {
             e.preventDefault();
             const section = item.getAttribute('data-section');
@@ -485,44 +485,47 @@ async function handleAddContender(e) {
             let mediaUpdated = false;
             let mediaData = {};
 
-            // Handle picture upload if selected
             const picFile = selectedPictures[0];
             if (picFile) {
-                if (window.supabaseClient && typeof uploadToSupabase === 'function') {
-                    try {
-                        const safeName = `${Date.now()}_${picFile.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
-                        const storedPath = await uploadToSupabase(window.SUPABASE_BUCKET_PROFILES, `${newContenderId}/${safeName}`, picFile, { upsert: true });
-                        if (storedPath) {
-                            const base = (window.SUPABASE_URL || '').replace(/\/$/, '');
-                            const publicUrl = `${base}/storage/v1/object/public/${window.SUPABASE_BUCKET_PROFILES}/${storedPath}`;
-                            mediaData.picture = publicUrl;
-                            mediaUpdated = true;
-                            console.log('✅ Picture uploaded to Supabase:', publicUrl);
-                        }
-                    } catch (upErr) {
-                        console.error('Supabase profile upload failed:', upErr);
+                try {
+                    const formData = new FormData();
+                    formData.append('image', picFile);
+                    const imageRes = await fetch(`${API_BASE_URL}/admin/contenders/upload-image`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        body: formData
+                    });
+                    const imageResult = await imageRes.json();
+                    if (imageResult.success && imageResult.url) {
+                        mediaData.picture = imageResult.url;
+                        mediaUpdated = true;
+                        console.log('✅ Picture uploaded via backend:', imageResult.url);
+                    } else {
+                        throw new Error(imageResult.error || 'Image upload failed');
                     }
+                } catch (upErr) {
+                    console.error('Backend profile upload failed:', upErr);
                 }
             }
 
-            // Handle video upload if selected
             const videoFile = selectedVideos[0];
             if (videoFile) {
-                if (window.supabaseClient && typeof uploadToSupabase === 'function' && typeof createSupabaseSignedUrl === 'function') {
-                    try {
-                        const safeVidName = `${Date.now()}_${videoFile.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
-                        const storedVidPath = await uploadToSupabase(window.SUPABASE_BUCKET_VIDEOS, `${newContenderId}/${safeVidName}`, videoFile, { upsert: true });
-                        if (storedVidPath) {
-                            const signed = await createSupabaseSignedUrl(window.SUPABASE_BUCKET_VIDEOS, storedVidPath, 60 * 60);
-                            if (signed) {
-                                mediaData.video = signed;
-                                mediaUpdated = true;
-                                console.log('✅ Video uploaded to Supabase');
-                            }
-                        }
-                    } catch (vidErr) {
-                        console.error('Supabase video upload failed:', vidErr);
+                try {
+                    const formData = new FormData();
+                    formData.append('video', videoFile);
+                    const videoRes = await fetch(`${API_BASE_URL}/events/${eventId}/contenders/${newContenderId}/upload-video`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        body: formData
+                    });
+                    const videoResult = await videoRes.json();
+                    if (videoResult.success && videoResult.data && videoResult.data.video) {
+                        mediaData.video = videoResult.data.video;
+                        mediaUpdated = true;
+                        console.log('✅ Video uploaded via backend');
                     }
+                } catch (vidErr) {
+                    console.error('Backend video upload failed:', vidErr);
                 }
             }
 
@@ -890,97 +893,52 @@ function editContender(id) {
                 return;
             }
 
-            // If a picture was selected, upload it via Supabase storage when available, else fallback to backend endpoint
             const picFile = document.getElementById('editContenderPicture').files[0];
             if (picFile) {
-                if (window.supabaseClient && typeof uploadToSupabase === 'function') {
-                    try {
-                        const safeName = `${Date.now()}_${picFile.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
-                        const storedPath = await uploadToSupabase(window.SUPABASE_BUCKET_PROFILES, `${id}/${safeName}`, picFile, { upsert: true });
-                        if (storedPath) {
-                            // Build public URL for profiles bucket (public access expected)
-                            const base = (window.SUPABASE_URL || '').replace(/\/$/, '');
-                            const publicUrl = `${base}/storage/v1/object/public/${window.SUPABASE_BUCKET_PROFILES}/${storedPath}`;
-                            updated.picture = publicUrl;
-                            contender.picture = publicUrl;
-                            console.log('✅ Picture uploaded to Supabase:', {
-                                storedPath,
-                                publicUrl,
-                                updatedObject: updated
-                            });
-                        }
-                    } catch (upErr) {
-                        console.error('Supabase profile upload failed:', upErr);
+                try {
+                    const formData = new FormData();
+                    formData.append('image', picFile);
+                    const imageRes = await fetch(`${API_BASE_URL}/admin/contenders/upload-image`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        body: formData
+                    });
+                    const imageResult = await imageRes.json();
+                    if (imageResult.success && imageResult.url) {
+                        updated.picture = imageResult.url;
+                        contender.picture = imageResult.url;
+                        console.log('✅ Picture uploaded via backend:', imageResult.url);
+                    } else {
+                        throw new Error(imageResult.error || 'Image upload failed');
                     }
+                } catch (upErr) {
+                    console.error('Backend profile upload failed:', upErr);
+                    alert('Image upload failed. Please try again or use a smaller file.');
+                    return;
                 }
             }
 
-            // Video upload (optional)
             const videoFile = document.getElementById('editContenderVideo')?.files[0];
             if (videoFile) {
-                if (window.supabaseClient && typeof uploadToSupabase === 'function' && typeof createSupabaseSignedUrl === 'function') {
-                    try {
-                        const safeVidName = `${Date.now()}_${videoFile.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
-                        const storedVidPath = await uploadToSupabase(window.SUPABASE_BUCKET_VIDEOS, `${id}/${safeVidName}`, videoFile, { upsert: true });
-                        if (storedVidPath) {
-                            // Create a signed URL for playback (1 hour expiry)
-                            const signed = await createSupabaseSignedUrl(window.SUPABASE_BUCKET_VIDEOS, storedVidPath, 60 * 60);
-                            if (signed) {
-                                updated.video = signed;
-                                contender.video = signed;
-                            }
-                        }
-                    } catch (vidErr) {
-                        console.error('Supabase video upload failed:', vidErr);
-                        // Fallback to backend upload
-                        try {
-                            const formData = new FormData();
-                            formData.append('videoUrl', ''); // We'll handle this differently
-                            formData.append('video', videoFile);
-                            
-                            const fallbackRes = await fetch(`${API_BASE_URL}/events/${eventId}/contenders/${id}/upload-video`, {
-                                method: 'POST',
-                                headers: { 'Authorization': `Bearer ${token}` },
-                                body: formData
-                            });
-                            
-                            const fallbackResult = await fallbackRes.json();
-                            if (fallbackResult.success && fallbackResult.data && fallbackResult.data.video) {
-                                updated.video = fallbackResult.data.video;
-                                contender.video = fallbackResult.data.video;
-                                
-                            }
-                        } catch (fallbackErr) {
-                            console.error('Backend video upload fallback also failed:', fallbackErr);
-                            alert('Video upload failed. Please try again or use a smaller file.');
-                            return; // Stop the save process if video upload fails
-                        }
+                try {
+                    const formData = new FormData();
+                    formData.append('video', videoFile);
+                    const videoRes = await fetch(`${API_BASE_URL}/events/${eventId}/contenders/${id}/upload-video`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        body: formData
+                    });
+                    const videoResult = await videoRes.json();
+                    if (videoResult.success && videoResult.data && videoResult.data.video) {
+                        updated.video = videoResult.data.video;
+                        contender.video = videoResult.data.video;
+                    } else {
+                        throw new Error(videoResult.error || 'Video upload failed');
                     }
-                } else {
-                    // No Supabase available, use backend fallback
-                    try {
-                        const formData = new FormData();
-                        formData.append('video', videoFile);
-                        
-                        const fallbackRes = await fetch(`${API_BASE_URL}/events/${eventId}/contenders/${id}/upload-video`, {
-                            method: 'POST',
-                            headers: { 'Authorization': `Bearer ${token}` },
-                            body: formData
-                        });
-                        
-                        const fallbackResult = await fallbackRes.json();
-                        if (fallbackResult.success && fallbackResult.data && fallbackResult.data.video) {
-                            updated.video = fallbackResult.data.video;
-                            contender.video = fallbackResult.data.video;
-                            
-                        } else {
-                            throw new Error(fallbackResult.error || 'Backend upload failed');
-                        }
-                    } catch (fallbackErr) {
-                        console.error('Backend video upload failed:', fallbackErr);
-                        alert('Video upload failed. Please try again or use a smaller file.');
-                        return; // Stop the save process if video upload fails
-                    }
+                } catch (fallbackErr) {
+                    console.error('Backend video upload failed:', fallbackErr);
+                    alert('Video upload failed. Please try again or use a smaller file.');
+                    return;
                 }
             }
 

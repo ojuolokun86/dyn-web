@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en" class="tournament-page">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>🏆 DYNAMIC EFOOTBALL COMMUNITY Tournaments</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/mobile-responsive.css">
+  <link rel="stylesheet" href="css/tournament.css">
+</head>
+<body class="tournament-page">
+  <header class="header">
+    <div class="logo">
+      <h1>🏆 DYNAMIC EFOOTBALL COMMUNITY</h1>
+      <p class="group-name">Hosted by DYNAMIC EFOOTBALL GROUP</p>
+    </div>
+    <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Open navigation">☰</button>
+    <nav class="navbar-nav" id="navbarNav">
+      <a href="index.html">Home</a>
+      <a href="contenders.html">Contenders</a>
+      <a href="vote.html">Vote</a>
+      <a href="tournaments.html" class="tournament-nav-active">🏆 Tournaments</a>
+      <a href="hall-of-fame.html">👑 Hall of Fame</a>
+      <a href="admin-login.html" class="admin-link">🔐 Admin</a>
+    </nav>
+  </header>
+  <main class="tournament-shell">
+    <section class="tournament-hero">
+      <p class="tournament-kicker">Community competition</p>
+      <h1>Tournaments</h1>
+      <p>Find your next match, register for free, and follow every round from registration to the final.</p>
+    </section>
+    <div class="tournament-toolbar">
+      <span id="tournament-count" class="tournament-kicker" aria-live="polite"></span>
+      <button id="refresh-tournaments" class="tournament-button ghost" type="button">↻ Refresh</button>
+    </div>
+    <section id="tournaments" class="tournament-grid" aria-live="polite" aria-busy="true">
+      <div class="tournament-state">Loading tournaments...</div>
+    </section>
+    <section id="tournament-details" class="tournament-details" aria-live="polite"></section>
+  </main>
+  <footer><p>2026 DYNAMIC EFOOTBALL COMMUNITY</p></footer>
+  <script src="js/api-config.js"></script>
+  <script src="js/tournaments.js"></script>
+</body>
+</html>
