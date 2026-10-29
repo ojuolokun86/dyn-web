@@ -363,6 +363,7 @@
                                 <input type="text" id="contenderClass" placeholder="e.g., eFootball Player, Pro Striker">
                             </div>
                         </div>
+                        <p id="contenderTrophyStats" class="muted" role="status"></p>
 
                         <div class="form-row">
                             <div class="form-group">
@@ -618,6 +619,29 @@
                     </div>
                 </div>
 
+                <div class="form-card">
+                    <h3>🏆 Trophy Categories and Points</h3>
+                    <p>Each category groups separate player achievements. Its point value is added to each winner's Balloon d'Or event score.</p>
+                    <button type="button" class="btn btn-secondary" onclick="reconcileTrophyHistoryNow()">↻ Check existing trophy history</button>
+                    <form id="trophyCategoryForm" class="form-row">
+                        <div class="form-group">
+                            <label for="trophyCategoryName">Category name *</label>
+                            <input type="text" id="trophyCategoryName" placeholder="e.g., Champions League" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="trophyCategoryPoints">Points per achievement *</label>
+                            <input type="number" id="trophyCategoryPoints" min="0" step="0.01" value="0" required>
+                        </div>
+                        <div class="form-group" style="align-self:end;">
+                            <button type="submit" class="btn btn-primary">Add Category</button>
+                        </div>
+                    </form>
+                    <div id="trophyCategoryMessage" role="status"></div>
+                    <div id="trophyCategoriesList" class="list-view">
+                        <p class="empty-state">Loading trophy categories...</p>
+                    </div>
+                </div>
+
                 <div id="add-hall-of-fame-form" class="form-card hidden">
                     <div id="hallOfFameMessage"></div>
                     <form id="hallOfFameForm">
@@ -652,8 +676,10 @@
                                 <input type="text" id="hofPlayerName" required>
                             </div>
                             <div class="form-group">
-                                <label for="hofLeague">League *</label>
-                                <input type="text" id="hofLeague" placeholder="e.g., Premier League, Champions Cup" required>
+                                <label for="hofLeague">Trophy Category *</label>
+                                <select id="hofLeague" required>
+                                    <option value="">-- Choose a category --</option>
+                                </select>
                             </div>
                         </div>
 
@@ -670,6 +696,10 @@
                             <div class="form-group">
                                 <label for="hofSeason">Season *</label>
                                 <input type="number" id="hofSeason" placeholder="e.g., 1, 2, 3" min="1" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="hofAwardedAt">Trophy date *</label>
+                                <input type="date" id="hofAwardedAt" required>
                             </div>
                         </div>
 
@@ -747,7 +777,9 @@
                                     </div>
                                     <div class="form-group">
                                         <label for="editHofLeague">League *</label>
-                                        <input type="text" id="editHofLeague" name="editHofLeague" placeholder="e.g., Premier League, Champions Cup" required>
+                                        <select id="editHofLeague" name="editHofLeague" required>
+                                            <option value="">-- Choose a category --</option>
+                                        </select>
                                     </div>
                                 </div>
 
@@ -760,6 +792,10 @@
                                         <label for="editHofSeason">Season *</label>
                                         <input type="number" id="editHofSeason" name="editHofSeason" placeholder="e.g., 1, 2, 3" min="1" required>
                                     </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="editHofAwardedAt">Trophy date *</label>
+                                    <input type="date" id="editHofAwardedAt" name="editHofAwardedAt" required>
                                 </div>
 
                                 <div class="form-row">

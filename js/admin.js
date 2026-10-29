@@ -152,6 +152,7 @@ let dashboardState = {
     pointTableValues: {} // Store default_points for each point table
 };
 let selectedContenderSource = null;
+let trophyHistoryReconciled = false;
 
 // Initialize Dashboard
 document.addEventListener('DOMContentLoaded', async () => {
@@ -241,6 +242,11 @@ function setupEventListeners() {
     document.getElementById('pointTableForm')?.addEventListener('submit', handleCreatePointTable);
     document.getElementById('awardPointsFormElement')?.addEventListener('submit', handleAwardPoints);
     document.getElementById('pastWinnerForm')?.addEventListener('submit', handleAddPastWinner);
+    document.getElementById('trophyCategoryForm')?.addEventListener('submit', handleAddTrophyCategory);
+    document.getElementById('contenderName')?.addEventListener('input', () => {
+        if (!selectedContenderSource) loadContenderTrophyStats();
+    });
+    document.getElementById('contenderEventSelect')?.addEventListener('change', loadContenderTrophyStats);
     document.getElementById('awardPointEventSelect')?.addEventListener('change', async () => {
         // Ensure point-tables load first, then contenders — prevents race conditions
         await loadPointTablesForAward();
@@ -546,7 +552,11 @@ async function handleAddContender(e) {
                 }
             }
 
-            messageDiv.innerHTML = '<div class="message success">✅ Contender added successfully!</div>';
+            const trophyIssues = result.data?.trophy_sync?.issues || [];
+            const trophyWarning = trophyIssues.length
+                ? ` ${trophyIssues.length} trophy record(s) need attention before points can be applied.`
+                : '';
+            messageDiv.innerHTML = `<div class="message ${trophyIssues.length ? 'error' : 'success'}">✅ Contender added successfully.${trophyWarning}</div>`;
             document.getElementById('contenderForm').reset();
             selectedPictures = [];
             selectedVideos = [];
@@ -633,6 +643,7 @@ function selectContenderSource(source) {
     setField('contenderClass', source.class);
     setField('contenderCountry', source.country);
     setField('contenderEmail', source.email);
+    loadContenderTrophyStats(source.name, source.profile_id);
     const picturePreview = document.getElementById('picturePreview');
     if (picturePreview) {
         picturePreview.innerHTML = source.picture
@@ -640,6 +651,38 @@ function selectContenderSource(source) {
             : '<p class="empty-state">No saved profile picture</p>';
     }
     document.getElementById('contenderSourceResults').innerHTML = `<p class="message success">Selected: ${escapeHtml(source.name)}</p>`;
+}
+
+async function loadContenderTrophyStats(playerName, profileId) {
+    const statsElement = document.getElementById('contenderTrophyStats');
+    const eventId = document.getElementById('contenderEventSelect')?.value;
+    profileId = profileId || selectedContenderSource?.profile_id;
+    const name = playerName || document.getElementById('contenderName')?.value?.trim();
+    if (!statsElement) return;
+    if (!name && !profileId) {
+        statsElement.textContent = '';
+        return;
+    }
+
+    const params = new URLSearchParams();
+    if (profileId) params.set('profileId', profileId);
+    if (name) params.set('playerName', name);
+    if (eventId) params.set('eventId', eventId);
+
+    statsElement.textContent = 'Checking trophy history...';
+    try {
+        const response = await fetch(`${API_BASE_URL}/admin/hall-of-fame-web/stats?${params}`);
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error || 'Unable to load trophy history');
+        const stats = result.data;
+        const categoryBreakdown = Object.entries(stats.eventCategories || {})
+            .map(([category, count]) => `${category}: ${count}`)
+            .join(', ');
+        statsElement.textContent = `Trophies — all-time: ${stats.allTimeTrophies}; selected event: ${stats.eventTrophies}${categoryBreakdown ? ` (${categoryBreakdown})` : ''}`;
+    } catch (error) {
+        console.error('Error loading contender trophy totals:', error);
+        statsElement.textContent = `Trophy history unavailable: ${error.message}`;
+    }
 }
 
 function loadContendersList() {
@@ -1352,7 +1395,7 @@ async function handleCreateEvent(e) {
         const result = await response.json();
         
         if (result.success) {
-            messageDiv.innerHTML = '<div class="message success">✅ Event created successfully!</div>';
+            messageDiv.innerHTML = `<div class="message ${result.data?.trophy_assignment?.issues?.length ? 'error' : 'success'}">✅ ${escapeHtml(result.message || 'Event created successfully')}</div>`;
             document.getElementById('eventForm').reset();
             setTimeout(() => toggleForm('event-form'), 1500);
             loadEvents();
@@ -2610,10 +2653,12 @@ async function loadPointAwardsForEdit() {
                         <td>${escapeHtml(award.point_table_title || 'Unknown')}</td>
                         <td style="text-align:center; color:#2ecc71; font-weight:bold;">${formatNumber(award.points_awarded)}</td>
                         <td style="text-align:right;">
-                            <div class="row-actions">
-                                <button class="btn btn-small btn-warning" onclick="editPointRecord('${award.id}', ${award.points_awarded}, '${award.point_table_title}', '${contenderId}', '${eventId}')">Edit</button>
-                                <button class="btn btn-small btn-danger" onclick="deletePointRecord('${award.id}', '${contenderId}', '${eventId}')">Delete</button>
-                            </div>
+                            ${award.hall_of_fame_entry_id
+                                ? '<span class="item-badge">Managed by Hall of Fame</span>'
+                                : `<div class="row-actions">
+                                    <button class="btn btn-small btn-warning" onclick="editPointRecord('${award.id}', ${award.points_awarded}, '${award.point_table_title}', '${contenderId}', '${eventId}')">Edit</button>
+                                    <button class="btn btn-small btn-danger" onclick="deletePointRecord('${award.id}', '${contenderId}', '${eventId}')">Delete</button>
+                                </div>`}
                         </td>
                     </tr>
                 `;
@@ -2963,6 +3008,7 @@ function loadExistingUserData() {
     if (!selectedValue) {
         // Clear form if no user selected
         document.getElementById('hofPlayerName').value = '';
+        document.getElementById('hofPlayerName').dataset.profileId = '';
         document.getElementById('hofEmail').value = '';
         document.getElementById('hofPhone').value = '';
         document.getElementById('playerImagePreview').style.display = 'none';
@@ -2976,6 +3022,7 @@ function loadExistingUserData() {
         document.getElementById('hofPlayerName').value = userData.player_name || '';
         document.getElementById('hofEmail').value = userData.email || '';
         document.getElementById('hofPhone').value = userData.phone || '';
+        document.getElementById('hofPlayerName').dataset.profileId = userData.profile_id || '';
 
         // Show player image if exists
         if (userData.player_image) {
@@ -2991,11 +3038,144 @@ function loadExistingUserData() {
     }
 }
 
+async function loadTrophyCategories() {
+    const categoriesList = document.getElementById('trophyCategoriesList');
+    const categorySelects = [
+        document.getElementById('hofLeague'),
+        document.getElementById('editHofLeague')
+    ].filter(Boolean);
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/admin/trophy-categories`);
+        const result = await response.json();
+        if (!result.success || !Array.isArray(result.data)) {
+            throw new Error(result.error || 'Unable to load trophy categories');
+        }
+
+        const categories = result.data;
+        categorySelects.forEach(select => {
+            const previousValue = select.value;
+            select.innerHTML = '<option value="">-- Choose a category --</option>' +
+                categories.map(category => `<option value="${escapeHtml(category.name)}">${escapeHtml(category.name)} (${formatNumber(category.points)} pts)</option>`).join('');
+            if (categories.some(category => category.name === previousValue)) select.value = previousValue;
+        });
+
+        if (categoriesList) {
+            categoriesList.innerHTML = categories.length
+                ? categories.map(category => `
+                    <div class="list-item" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                        <div><strong>${escapeHtml(category.name)}</strong><span class="item-badge">${formatNumber(category.points)} pts per achievement</span></div>
+                        <div class="item-actions">
+                            <button type="button" class="btn btn-small btn-secondary" onclick="editTrophyCategory('${category.id}', decodeURIComponent('${encodeURIComponent(category.name).replace(/'/g, '%27')}'), ${Number(category.points)})">Edit</button>
+                            <button type="button" class="btn btn-small btn-danger" onclick="deleteTrophyCategory('${category.id}')">Delete</button>
+                        </div>
+                    </div>
+                `).join('')
+                : '<p class="empty-state">No categories yet. Add one before recording a trophy achievement.</p>';
+        }
+        return categories;
+    } catch (error) {
+        console.error('Error loading trophy categories:', error);
+        if (categoriesList) categoriesList.innerHTML = `<p class="empty-state">Unable to load categories: ${escapeHtml(error.message)}</p>`;
+        throw error;
+    }
+}
+
+async function handleAddTrophyCategory(event) {
+    event.preventDefault();
+    const message = document.getElementById('trophyCategoryMessage');
+    const token = localStorage.getItem('adminToken');
+    const payload = {
+        name: document.getElementById('trophyCategoryName').value.trim(),
+        points: Number(document.getElementById('trophyCategoryPoints').value)
+    };
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/admin/trophy-categories`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error || 'Unable to add category');
+        document.getElementById('trophyCategoryForm').reset();
+        document.getElementById('trophyCategoryPoints').value = '0';
+        message.innerHTML = '<div class="message success">Category added.</div>';
+        await loadTrophyCategories();
+    } catch (error) {
+        message.innerHTML = `<div class="message error">${escapeHtml(error.message)}</div>`;
+    }
+}
+
+async function reconcileTrophyHistoryNow() {
+    trophyHistoryReconciled = false;
+    await loadHallOfFameList();
+}
+
+async function editTrophyCategory(categoryId, currentName, currentPoints) {
+    const name = prompt('Category name:', currentName);
+    if (name === null) return;
+    const pointsValue = prompt('Points awarded per achievement:', String(currentPoints));
+    if (pointsValue === null) return;
+    const points = Number(pointsValue);
+    if (!name.trim() || !Number.isFinite(points) || points < 0) {
+        alert('Enter a category name and non-negative point value.');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/admin/trophy-categories/${categoryId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('adminToken')}` },
+            body: JSON.stringify({ name: name.trim(), points })
+        });
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error || 'Unable to update category');
+        await loadTrophyCategories();
+        await loadHallOfFameList();
+    } catch (error) {
+        alert(`Unable to update category: ${error.message}`);
+    }
+}
+
+async function deleteTrophyCategory(categoryId) {
+    if (!confirm('Delete this trophy category? Categories with recorded achievements cannot be deleted.')) return;
+    try {
+        const response = await fetch(`${API_BASE_URL}/admin/trophy-categories/${categoryId}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` }
+        });
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error || 'Unable to delete category');
+        await loadTrophyCategories();
+    } catch (error) {
+        alert(`Unable to delete category: ${error.message}`);
+    }
+}
+
 async function loadHallOfFameList() {
     const listDiv = document.getElementById('hallOfFameList');
     if (!listDiv) return;
 
     try {
+        await loadTrophyCategories();
+        if (!trophyHistoryReconciled) {
+            const reconcileResponse = await fetch(`${API_BASE_URL}/admin/trophy-history/reconcile`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` }
+            });
+            const reconcileResult = await reconcileResponse.json();
+            if (!reconcileResult.success) throw new Error(reconcileResult.error || 'Unable to reconcile trophy history');
+            trophyHistoryReconciled = true;
+            const reconciliation = reconcileResult.data;
+            const status = document.getElementById('trophyCategoryMessage');
+            if (status) {
+                const issueList = reconciliation.issues.length
+                    ? `<ul>${reconciliation.issues.map(issue => `<li>${escapeHtml(issue.entryId)}: ${escapeHtml(issue.error)}</li>`).join('')}</ul>`
+                    : '';
+                status.innerHTML = `<div class="message">${reconciliation.entriesProcessed} existing trophy record(s) checked; ${reconciliation.entriesAssigned} assigned to event periods; ${reconciliation.entriesScored} scored; ${reconciliation.entriesPending} pending a matching contender or event.${issueList}</div>`;
+            }
+        }
         const res = await fetch(`${API_BASE_URL}/admin/hall-of-fame-web`);
         const result = await res.json();
 
@@ -3047,7 +3227,7 @@ async function loadHallOfFameList() {
                                     }
                                     <div>
                                         <div style="font-weight: 600; font-size: 13px;">${escapeHtml(win.team_name)}</div>
-                                        <div style="font-size: 11px; color: #666;">Season ${win.season}</div>
+                                        <div style="font-size: 11px; color: #666;">Season ${win.season} · ${win.event_name ? `Balloon d'Or: ${escapeHtml(win.event_name)}` : 'Pending event assignment'}</div>
                                     </div>
                                     <button onclick="deleteHallOfFameEntry('${win.id}')" style="background: #ff4444; color: white; border: none; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 12px; margin-left: 5px;">×</button>
                                     <button onclick="openEditHallOfFameModal('${win.id}', '${escapeHtml(playerName)}', '${escapeHtml(leagueName)}', '${escapeHtml(playerData.player_image || '')}', '${escapeHtml(win.team_name)}', '${win.season}', '${escapeHtml(win.team_logo || '')}')" style="background: #667eea; color: white; border: none; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 12px; margin-left: 5px;">✏️</button>
@@ -3206,6 +3386,10 @@ async function handleAddHallOfFame(e) {
             league: document.getElementById('hofLeague').value,
             team_name: teamName,
             season: parseInt(document.getElementById('hofSeason').value) || 1,
+            profile_id: document.getElementById('hofPlayerName').dataset.profileId || null,
+            awarded_at: document.getElementById('hofAwardedAt').value
+                ? new Date(`${document.getElementById('hofAwardedAt').value}T12:00:00`).toISOString()
+                : new Date().toISOString(),
             team_logo: teamLogoUrl,
             player_image: playerImageUrl,
             email: document.getElementById('hofEmail').value || '',
@@ -3232,7 +3416,15 @@ async function handleAddHallOfFame(e) {
         const result = await res.json();
 
         if (result.success) {
-            msgDiv.innerHTML = '<div class="message success">✅ Hall of Fame entry added successfully!</div>';
+            const scoreMessage = result.data?.scoring_warning
+                ? ` Trophy was saved, but points need attention: ${result.data.scoring_warning}`
+                : result.data?.points_applied
+                    ? ` ${formatNumber(result.data.points_awarded)} event points awarded.`
+                    : result.data?.event_id
+                        ? ' Saved; event points will be applied when this player is added to the event.'
+                        : ' Saved; waiting for the next Balloon d’Or event to be created.';
+            const messageClass = result.data?.scoring_warning ? 'error' : 'success';
+            msgDiv.innerHTML = `<div class="message ${messageClass}">✅ Hall of Fame entry added successfully.${scoreMessage}</div>`;
             document.getElementById('hallOfFameForm').reset();
             document.getElementById('teamLogoPreview').style.display = 'none';
             document.getElementById('playerImagePreview').style.display = 'none';
@@ -3243,8 +3435,10 @@ async function handleAddHallOfFame(e) {
             document.getElementById('existingUserSection').style.display = 'none';
             // Make fields editable again
             document.getElementById('hofPlayerName').readOnly = false;
+            document.getElementById('hofPlayerName').dataset.profileId = '';
             document.getElementById('hofEmail').readOnly = false;
             document.getElementById('hofPhone').readOnly = false;
+            document.getElementById('hofAwardedAt').value = new Date().toISOString().slice(0, 10);
             setTimeout(() => {
                 toggleForm('add-hall-of-fame-form');
                 loadHallOfFameList();
@@ -3576,6 +3770,9 @@ async function openEditHallOfFameModal(hofId, playerName, league, playerImage, e
                     document.getElementById('editHofLeague').value = entry.league || '';
                     document.getElementById('editHofTeam').value = entry.team_name || '';
                     document.getElementById('editHofSeason').value = entry.season || '';
+                    document.getElementById('editHofAwardedAt').value = entry.awarded_at
+                        ? new Date(entry.awarded_at).toISOString().slice(0, 10)
+                        : '';
                     document.getElementById('editHofEmail').value = entry.email || '';
                     document.getElementById('editHofPhone').value = entry.phone || '';
                     
@@ -3717,6 +3914,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 league: formData.get('editHofLeague'),
                 team: formData.get('editHofTeam'),
                 season: formData.get('editHofSeason'),
+                awardedAt: document.getElementById('editHofAwardedAt').value
+                    ? new Date(`${document.getElementById('editHofAwardedAt').value}T12:00:00`).toISOString()
+                    : undefined,
                 email: formData.get('editHofEmail'),
                 phone: formData.get('editHofPhone')
             };
@@ -3748,6 +3948,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Call API to update Hall of Fame
                 const response = await fetch(`${API_BASE_URL}/admin/hall-of-fame-web/${formData.get('hofId')}`, {
                     method: 'PUT',
+                    headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` },
                     body: uploadFormData
                 });
                 
@@ -3755,7 +3956,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (result.success) {
                     document.getElementById('editHallOfFameMessage').innerHTML = 
-                        '<div class="success-message">✅ Hall of Fame entry updated successfully!</div>';
+                        result.warning
+                            ? `<div class="error-message">Entry updated, but event points need attention: ${escapeHtml(result.warning)}</div>`
+                            : '<div class="success-message">✅ Hall of Fame entry updated successfully!</div>';
                     
                     setTimeout(() => {
                         closeEditHallOfFameModal();
@@ -3953,6 +4156,7 @@ function toggleUserType() {
         phoneField.readOnly = false;
         // Clear existing user selection
         document.getElementById('existingUserSelect').value = '';
+        playerNameField.dataset.profileId = '';
     }
 }
 
@@ -3985,6 +4189,7 @@ async function loadExistingUsers() {
                         email: entry.email || '',
                         phone: entry.phone || '',
                         player_image: entry.player_image || '',
+                        profile_id: entry.profile_id || '',
                         wins: []
                     });
                 }
@@ -4025,6 +4230,7 @@ function loadExistingUserData() {
     if (!selectedValue) {
         // Clear fields if no user selected
         document.getElementById('hofPlayerName').value = '';
+        document.getElementById('hofPlayerName').dataset.profileId = '';
         document.getElementById('hofEmail').value = '';
         document.getElementById('hofPhone').value = '';
         return;
@@ -4035,6 +4241,7 @@ function loadExistingUserData() {
         
         // Populate form with existing user data
         document.getElementById('hofPlayerName').value = userData.player_name || '';
+        document.getElementById('hofPlayerName').dataset.profileId = userData.profile_id || '';
         document.getElementById('hofEmail').value = userData.email || '';
         document.getElementById('hofPhone').value = userData.phone || '';
         
@@ -4062,5 +4269,3 @@ function loadExistingUserData() {
         console.error('Error parsing user data:', error);
     }
 }
-
-
