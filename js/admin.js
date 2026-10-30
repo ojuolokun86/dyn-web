@@ -152,7 +152,7 @@ let dashboardState = {
     pointTableValues: {} // Store default_points for each point table
 };
 let selectedContenderSource = null;
-let trophyHistoryReconciled = false;
+let shouldReconcileTrophyHistory = false;
 
 // Initialize Dashboard
 document.addEventListener('DOMContentLoaded', async () => {
@@ -304,6 +304,14 @@ function switchSection(sectionId) {
     }
     if (sectionId === 'past-winners') {
         if (typeof loadPastWinnersList === 'function') loadPastWinnersList();
+    }
+    if (sectionId === 'events') {
+        loadTrophyCategories().catch(error => {
+            const message = document.getElementById('trophyCategoryMessage');
+            if (message) {
+                message.innerHTML = `<div class="message error">${escapeHtml(error.message)}</div>`;
+            }
+        });
     }
     if (sectionId === 'hall-of-fame') {
         if (typeof loadHallOfFameList === 'function') loadHallOfFameList();
@@ -3061,13 +3069,23 @@ async function loadTrophyCategories() {
         });
 
         if (categoriesList) {
+            const entriesResponse = await fetch(`${API_BASE_URL}/admin/hall-of-fame-web/list`);
+            const entriesResult = await entriesResponse.json();
+            if (!entriesResult.success || !Array.isArray(entriesResult.data)) {
+                throw new Error(entriesResult.error || 'Unable to check category achievements');
+            }
+            const usedCategories = new Set(entriesResult.data.map(entry => entry.league));
+
             categoriesList.innerHTML = categories.length
                 ? categories.map(category => `
-                    <div class="list-item" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
-                        <div><strong>${escapeHtml(category.name)}</strong><span class="item-badge">${formatNumber(category.points)} pts per achievement</span></div>
+                    <div class="list-item trophy-category-item" data-category-id="${category.id}">
+                        <div class="trophy-category-info">
+                            <strong>${escapeHtml(category.name)}</strong>
+                            <span class="item-badge">${formatNumber(category.points)} pts per achievement</span>
+                        </div>
                         <div class="item-actions">
                             <button type="button" class="btn btn-small btn-secondary" onclick="editTrophyCategory('${category.id}', decodeURIComponent('${encodeURIComponent(category.name).replace(/'/g, '%27')}'), ${Number(category.points)})">Edit</button>
-                            <button type="button" class="btn btn-small btn-danger" onclick="deleteTrophyCategory('${category.id}')">Delete</button>
+                            ${usedCategories.has(category.name) ? '' : `<button type="button" class="btn btn-small btn-danger" onclick="deleteTrophyCategory('${category.id}')">Delete</button>`}
                         </div>
                     </div>
                 `).join('')
@@ -3108,17 +3126,39 @@ async function handleAddTrophyCategory(event) {
 }
 
 async function reconcileTrophyHistoryNow() {
-    trophyHistoryReconciled = false;
+    shouldReconcileTrophyHistory = true;
     await loadHallOfFameList();
 }
 
-async function editTrophyCategory(categoryId, currentName, currentPoints) {
-    const name = prompt('Category name:', currentName);
-    if (name === null) return;
-    const pointsValue = prompt('Points awarded per achievement:', String(currentPoints));
-    if (pointsValue === null) return;
-    const points = Number(pointsValue);
-    if (!name.trim() || !Number.isFinite(points) || points < 0) {
+function editTrophyCategory(categoryId, currentName, currentPoints) {
+    const row = Array.from(document.querySelectorAll('.trophy-category-item'))
+        .find(item => item.dataset.categoryId === categoryId);
+    if (!row) return;
+
+    row.innerHTML = `
+        <form class="trophy-category-edit-form" onsubmit="saveTrophyCategory(event, '${categoryId}')">
+            <label>
+                <span>Category name</span>
+                <input name="name" type="text" value="${escapeHtml(currentName)}" required>
+            </label>
+            <label>
+                <span>Points per achievement</span>
+                <input name="points" type="number" min="0" step="0.01" value="${Number(currentPoints)}" required>
+            </label>
+            <div class="item-actions">
+                <button type="submit" class="btn btn-small btn-primary">Save</button>
+                <button type="button" class="btn btn-small btn-secondary" onclick="loadTrophyCategories().catch(error => alert(error.message))">Cancel</button>
+            </div>
+        </form>
+    `;
+}
+
+async function saveTrophyCategory(event, categoryId) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const name = form.elements.name.value.trim();
+    const points = Number(form.elements.points.value);
+    if (!name || !Number.isFinite(points) || points < 0) {
         alert('Enter a category name and non-negative point value.');
         return;
     }
@@ -3159,14 +3199,14 @@ async function loadHallOfFameList() {
 
     try {
         await loadTrophyCategories();
-        if (!trophyHistoryReconciled) {
+        if (shouldReconcileTrophyHistory) {
             const reconcileResponse = await fetch(`${API_BASE_URL}/admin/trophy-history/reconcile`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` }
             });
             const reconcileResult = await reconcileResponse.json();
             if (!reconcileResult.success) throw new Error(reconcileResult.error || 'Unable to reconcile trophy history');
-            trophyHistoryReconciled = true;
+            shouldReconcileTrophyHistory = false;
             const reconciliation = reconcileResult.data;
             const status = document.getElementById('trophyCategoryMessage');
             if (status) {

@@ -50,6 +50,8 @@
         .contender-card {
             background: linear-gradient(145deg, #ffffff 0%, #f8f9ff 100%);
             border-radius: 16px;
+            width: 100%;
+            min-width: 0;
             overflow: hidden;
             box-shadow: 0 6px 20px rgba(0,0,0,0.1);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -431,6 +433,130 @@
             margin-bottom: 10px;
         }
 
+        .contenders-header {
+            margin-bottom: 32px;
+        }
+
+        .contender-view-controls {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 24px 0 32px;
+        }
+
+        .contender-view-button {
+            min-height: 44px;
+            padding: 10px 18px;
+            border: 1px solid rgba(255, 255, 255, 0.65);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.12);
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .contender-view-button[aria-pressed="true"] {
+            background: #fff;
+            color: #4d56a8;
+        }
+
+        .contender-view-button:focus-visible,
+        .view-btn:focus-visible {
+            outline: 3px solid #ffd400;
+            outline-offset: 3px;
+        }
+
+        .contender-event-group {
+            margin-bottom: 36px;
+        }
+
+        .contender-event-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px 16px;
+            padding: 16px 18px;
+            margin-bottom: 18px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+
+        .contender-event-heading h2 {
+            margin: 0;
+            font-size: clamp(18px, 3vw, 22px);
+            overflow-wrap: anywhere;
+        }
+
+        .contender-event-heading p {
+            margin: 0;
+            opacity: 0.92;
+        }
+
+        .contender-event-status {
+            padding: 4px 10px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: capitalize;
+        }
+
+        .contender-event-detail {
+            background: #f0f1f8;
+            color: #4b5563;
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin: 0 0 10px;
+        }
+
+        .past-contender-note {
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: #f4f4f8;
+            color: #555;
+            font-size: 13px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 28px 16px;
+            }
+
+            .contenders-header h1 {
+                font-size: clamp(30px, 9vw, 40px);
+            }
+
+            .contender-view-controls {
+                position: sticky;
+                top: 0;
+                z-index: 20;
+                padding: 10px 0;
+                margin: 16px 0 24px;
+                background: rgba(11, 11, 11, 0.92);
+                backdrop-filter: blur(8px);
+            }
+
+            .contender-view-button {
+                flex: 1 1 145px;
+                padding: 10px 12px;
+            }
+
+            .contenders-grid {
+                grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+                gap: 12px;
+            }
+
+            .contender-event-heading {
+                align-items: flex-start;
+                flex-direction: column;
+                padding: 14px;
+            }
+        }
+
         /* Vote overlay and ranking styles */
         .contender-votes-badge {
             position: absolute;
@@ -531,6 +657,10 @@
             <div class="contenders-header">
                 <h1>Contenders</h1>
                 <p>View and compete with event contenders</p>
+                <div class="contender-view-controls" role="group" aria-label="Contender event views">
+                    <button id="currentContendersButton" class="contender-view-button" type="button" aria-pressed="true" onclick="showContenderView(false)">Current Event</button>
+                    <button id="pastContendersButton" class="contender-view-button" type="button" aria-pressed="false" onclick="showContenderView(true)">Past Contenders</button>
+                </div>
                 <button onclick="loadContenders()" style="margin-top: 20px; padding: 10px 20px; background: #fff; color: #667eea; border: none; border-radius: 25px; cursor: pointer; font-weight: bold;">🔄 Refresh Contenders</button>
             </div>
             <p>Select a contender to view their profile</p>
@@ -554,6 +684,10 @@
                         <strong>Country</strong>
                         <span id="modalCountry"></span>
                     </div>
+                    <div class="modal-meta-item">
+                        <strong>Event</strong>
+                        <span id="modalEvent"></span>
+                    </div>
                 </div>
                 <div id="modalTrophies" class="modal-trophies" style="display: none;">
                     <h3>🏆 Hall of Fame</h3>
@@ -573,9 +707,9 @@
 
     <script src="js/api-config.js"></script>
     <script>
-        let currentEvent = null;
         let allContenders = [];
         let hallOfFameData = null; // Cache for hall of fame data
+        let showingPastContenders = false;
 
         // Load hall of fame data
         async function loadHallOfFameData() {
@@ -611,63 +745,70 @@
             return trophies;
         }
 
-        // Load current event and contenders
+        // Load current and past event contenders
         async function loadContenders() {
             try {
                 // Load hall of fame data
                 await loadHallOfFameData();
 
-                // Get all contenders from all active events
-                const contRes = await fetch(`${API_BASE_URL}/events/all-contenders?t=${Date.now()}`);
+                // Load current and past contenders so switching views does not require another request.
+                const contRes = await fetch(`${API_BASE_URL}/events/all-contenders?includePast=true&t=${Date.now()}`);
                 const contResult = await contRes.json();
                 
-                if (!contResult.success || !contResult.data) {
-                    showEmpty('No contenders available');
-                    return;
+                if (!contRes.ok || !contResult.success) {
+                    throw new Error(contResult.error || 'Unable to load contenders');
                 }
+                if (!Array.isArray(contResult.data)) throw new Error('The contenders response was invalid');
 
                 allContenders = contResult.data;
-                
-                // Update header
-                document.querySelector('.contenders-header h1').textContent = 'All Active Contenders';
-                
                 renderContenders();
             } catch (err) {
                 console.error('Error loading contenders:', err);
-                showEmpty('Error loading contenders');
+                showEmpty(`Unable to load contenders: ${err.message}`);
             }
         }
 
         function renderContenders() {
             const container = document.getElementById('contendersContainer');
-            
-            // Filter out contenders from closed or winner_announced events
-            const activeContenders = allContenders.filter(c => 
-                c.eventStatus !== 'closed' && c.eventStatus !== 'winner_announced'
-            );
-            
-            if (activeContenders.length === 0) {
-                showEmpty('No active contenders available');
+            const isPastEvent = contender => ['closed', 'winner_announced'].includes(contender.event_status);
+            const activeContenders = allContenders.filter(contender => !isPastEvent(contender));
+            const pastContenders = allContenders.filter(isPastEvent);
+            const visibleContenders = showingPastContenders ? pastContenders : activeContenders;
+            const viewTitle = showingPastContenders ? 'Past Contenders' : 'Current Event Contenders';
+
+            document.querySelector('.contenders-header h1').textContent = viewTitle;
+            document.querySelector('.contenders-header > p').textContent = showingPastContenders
+                ? 'Explore contenders from completed events and see which event they represented.'
+                : 'The current event contenders are shown here. New entrants appear automatically.';
+            document.getElementById('currentContendersButton').textContent = `Current Event (${activeContenders.length})`;
+            document.getElementById('pastContendersButton').textContent = `Past Contenders (${pastContenders.length})`;
+            document.getElementById('currentContendersButton').setAttribute('aria-pressed', String(!showingPastContenders));
+            document.getElementById('pastContendersButton').setAttribute('aria-pressed', String(showingPastContenders));
+
+            if (visibleContenders.length === 0) {
+                showEmpty(showingPastContenders ? 'No past contenders are available yet.' : 'No contenders have been added to the current event yet.');
                 return;
             }
 
-            // Group contenders by event
-            const contendersByEvent = {};
-            activeContenders.forEach(contender => {
-                const eventName = contender.event_name || 'Unknown Event';
-                if (!contendersByEvent[eventName]) {
-                    contendersByEvent[eventName] = [];
-                }
-                contendersByEvent[eventName].push(contender);
+            const contendersByEvent = new Map();
+            visibleContenders.forEach(contender => {
+                const eventKey = contender.event_id || contender.event_name || 'unknown-event';
+                if (!contendersByEvent.has(eventKey)) contendersByEvent.set(eventKey, []);
+                contendersByEvent.get(eventKey).push(contender);
             });
 
-            // Render contenders grouped by event
-            const html = Object.entries(contendersByEvent).map(([eventName, contenders]) => {
+            const html = Array.from(contendersByEvent.values()).map(contenders => {
+                contenders.sort((first, second) => Number(second.total_votes || 0) - Number(first.total_votes || 0));
+                const eventName = contenders[0].event_name || 'Unknown Event';
+                const eventStatus = String(contenders[0].event_status || 'unknown').toLowerCase();
+                const endedAt = contenders[0].event_ended_at;
+                const endedDate = endedAt ? new Date(endedAt) : null;
                 return `
-                    <div style="margin-bottom: 40px;">
-                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
-                            <h3 style="margin: 0; font-size: 20px;">🏆 ${escapeHtml(eventName)}</h3>
-                            <p style="margin: 5px 0 0 0; opacity: 0.9;">${contenders.length} contender${contenders.length > 1 ? 's' : ''}</p>
+                    <section class="contender-event-group">
+                        <div class="contender-event-heading">
+                            <h2>🏆 ${escapeHtml(eventName)}</h2>
+                            <p>${contenders.length} contender${contenders.length === 1 ? '' : 's'}</p>
+                            <span class="contender-event-status">${escapeHtml(eventStatus.replace(/_/g, ' '))}</span>
                         </div>
                         <div class="contenders-grid">
                             ${contenders.map((c, index) => {
@@ -678,7 +819,7 @@
                                 const topClass = rank <= 3 ? `top-${rank}` : '';
                                 
                                 return `
-                                <div class="contender-card ${topClass}" onclick="showDetails('${c.id}')">
+                                <article class="contender-card ${topClass}" onclick="showDetails('${c.id}')">
                                     <div class="contender-image ${!c.picture ? 'no-image' : ''}">
                                         <div class="rank-badge rank-${rank}">${rank}</div>
                                         <div class="contender-votes-badge">${votes} votes</div>
@@ -694,17 +835,23 @@
                                         <div class="vote-bar">
                                             <div class="vote-fill" style="width: ${percentage}%"></div>
                                         </div>
-                                        <button class="view-btn">View Profile →</button>
+                                        <button type="button" class="view-btn">View Profile →</button>
                                     </div>
-                                </div>
+                                </article>
                             `;
                             }).join('')}
                         </div>
-                    </div>
+                        ${showingPastContenders && endedDate && !Number.isNaN(endedDate.getTime()) ? `<p class="contender-event-detail">Ended ${endedDate.toLocaleDateString()}</p>` : ''}
+                    </section>
                 `;
             }).join('');
             
             container.innerHTML = html;
+        }
+
+        function showContenderView(showPast) {
+            showingPastContenders = showPast;
+            renderContenders();
         }
 
         function showDetails(contenderId) {
@@ -725,6 +872,8 @@
             document.getElementById('modalClass').textContent = contender.class || 'N/A';
             document.getElementById('modalCountry').textContent = contender.country || 'N/A';
             document.getElementById('modalDescription').textContent = contender.description || 'No description available';
+            document.getElementById('modalEvent').textContent = contender.event_name || 'Unknown event';
+            window.selectedContenderId = contenderId;
 
             // Get and display trophies
             const trophies = getPlayerTrophies(contender.name);
@@ -751,8 +900,8 @@
                 trophiesDiv.style.display = 'none';
             }
 
-            // Store contender ID for voting
-            window.selectedContenderId = contenderId;
+            const canVote = !['closed', 'winner_announced', 'draft'].includes(contender.event_status);
+            document.querySelector('.modal-action').hidden = !canVote;
 
             // Show modal
             document.getElementById('detailModal').classList.add('active');
@@ -763,19 +912,16 @@
         }
 
         function goToVote() {
-            if (window.selectedContenderId && currentEvent) {
-                // Pass to vote page via URL params
-                window.location.href = `vote.html?eventId=${currentEvent.id}&contenderId=${window.selectedContenderId}`;
-            } else {
-                window.location.href = 'vote.html';
-            }
+            const selectedContender = allContenders.find(contender => contender.id === window.selectedContenderId);
+            if (!selectedContender || !selectedContender.event_id) return;
+            window.location.href = `vote.html?eventId=${encodeURIComponent(selectedContender.event_id)}&contenderId=${encodeURIComponent(selectedContender.id)}`;
         }
 
         function showEmpty(message) {
             document.getElementById('contendersContainer').innerHTML = `
                 <div class="empty-state" style="grid-column: 1 / -1;">
                     <h2>😕</h2>
-                    <p>${message}</p>
+                    <p>${escapeHtml(message)}</p>
                 </div>
             `;
         }

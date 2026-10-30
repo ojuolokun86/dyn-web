@@ -5,8 +5,6 @@ html, body {
     margin: 0;
     padding: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #111;
-    color: white;
 }
 * {
     box-sizing: border-box;
@@ -184,5 +182,119 @@ body {
         width: 100%;
         box-sizing: border-box;
         padding: 0 0.5rem;
+    }
+
+    .header {
+        min-height: 76px;
+        padding: 12px 76px 12px 16px;
+    }
+
+    .logo {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .logo h1 {
+        font-size: clamp(1rem, 4.5vw, 1.4rem);
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+    }
+
+    .group-name {
+        font-size: 0.68rem;
+        line-height: 1.35;
+    }
+
+    main,
+    .container,
+    .content-container {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    img,
+    video,
+    iframe {
+        max-width: 100%;
+    }
+
+    input,
+    select,
+    textarea,
+    button {
+        max-width: 100%;
+        font: inherit;
+    }
+
+    .navbar-nav a {
+        min-height: 44px;
+    }
+
+    .modal-content,
+    .modal-body {
+        max-width: calc(100vw - 24px);
+        max-height: calc(100dvh - 24px);
+        overflow-y: auto;
+    }
+
+    .home-three-container,
+    .event-contenders,
+    .contenders-grid,
+    .tournament-grid,
+    .results-grid,
+    .hof-grid {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .event-contenders,
+    .contenders-grid {
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+    }
+
+    .event-contenders > *,
+    .contenders-grid > * {
+        min-width: 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .header {
+        padding-left: 12px;
+    }
+
+    .mobile-menu-toggle {
+        top: 12px;
+        right: 12px;
+        width: 44px;
+        height: 44px;
+    }
+
+    .hero-content {
+        width: 100%;
+        padding: 16px;
+    }
+
+    .home-three-container {
+        padding: 14px;
+    }
+
+    .modal-content {
+        width: calc(100vw - 24px);
+        padding: 16px;
+    }
+
+    .modal-body {
+        padding: 20px 16px;
+    }
+
+    .modal-body h2 {
+        font-size: 1.5rem;
+        overflow-wrap: anywhere;
+    }
+
+    footer {
+        margin-top: 48px;
+        padding: 16px;
     }
 }

@@ -643,6 +643,20 @@
                     return;
                 }
 
+                if (currentEvent.status !== 'open') {
+                    document.getElementById('eventInfoSection').innerHTML = `
+                        <h3>${escapeHtml(currentEvent.name)}</h3>
+                        <p>Voting has not opened for this event yet.</p>
+                    `;
+                    document.getElementById('contendersVoteGrid').innerHTML = `
+                        <div class="empty-state" style="grid-column: 1 / -1;">
+                            <h3>Coming soon</h3>
+                            <p>Voting will be available when the admin opens the event.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
                 displayEventInfo();
                 // Load vote tables first, then contenders
                 await loadVoteTables();

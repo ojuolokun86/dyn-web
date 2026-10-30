@@ -670,6 +670,55 @@ body {
     background: #95a5a6;
 }
 
+.trophy-category-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    color: #333;
+}
+
+.trophy-category-info {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    min-width: 0;
+}
+
+.trophy-category-info strong {
+    color: #333;
+}
+
+.trophy-category-item .item-actions {
+    flex-shrink: 0;
+    margin-top: 0;
+}
+
+.trophy-category-edit-form {
+    display: grid;
+    grid-template-columns: minmax(180px, 1fr) minmax(160px, 0.6fr) auto;
+    align-items: end;
+    gap: 12px;
+    width: 100%;
+    color: #333;
+}
+
+.trophy-category-edit-form label span {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+}
+
+.trophy-category-edit-form input {
+    width: 100%;
+}
+
+.trophy-category-edit-form .item-actions {
+    display: flex;
+    gap: 8px;
+}
+
 .item-details {
     display: flex;
     flex-wrap: wrap;
@@ -858,7 +907,45 @@ body {
     .top-header {
         flex-direction: column;
         gap: 15px;
-        align-items: flex-start;
+        align-items: stretch;
+        padding: 18px 16px;
+    }
+
+    .header-left {
+        width: 100%;
+        min-width: 0;
+        padding-left: 56px;
+    }
+
+    .header-left h1 {
+        font-size: clamp(1.25em, 5vw, 1.8em);
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+    }
+
+    .header-right,
+    .header-right > div {
+        width: 100%;
+        min-width: 0;
+        flex-wrap: wrap;
+    }
+
+    .header-right {
+        gap: 10px;
+    }
+
+    .header-right > div {
+        justify-content: space-between;
+    }
+
+    .admin-info {
+        min-width: 0;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .admin-info span:first-child {
+        overflow-wrap: anywhere;
     }
 
     .sidebar-nav {
@@ -897,6 +984,19 @@ body {
 
     .list-item {
         border-left-width: 2px;
+    }
+
+    .trophy-category-item {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .trophy-category-edit-form {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .trophy-category-item .item-actions {
+        flex-direction: row;
     }
 }
 
