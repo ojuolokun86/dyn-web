@@ -1427,7 +1427,7 @@ async function populateEventSelects() {
         
         if (result.success && result.data) {
             const events = result.data;
-            const eventOptions = events.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+            const eventOptions = events.map(e => `<option value="${escapeHtml(e.id)}">${escapeHtml(e.name)}</option>`).join('');
             
             const contenderSelect = document.getElementById('contenderEventSelect');
             const voteSelect = document.getElementById('voteEventSelect');
@@ -1437,27 +1437,22 @@ async function populateEventSelects() {
             const analyticsSelect = document.getElementById('analyticsEventSelect');
             const editPointSelect = document.getElementById('editPointEventSelect');
 
-            if (contenderSelect) {
-                contenderSelect.innerHTML = '<option value="">-- Choose an event --</option>' + eventOptions;
-            }
-            if (voteSelect) {
-                voteSelect.innerHTML = '<option value="">-- Choose an event --</option>' + eventOptions;
-            }
-            if (voteSelectInline) {
-                voteSelectInline.innerHTML = '<option value="">-- Choose an event --</option>' + eventOptions;
-            }
-            if (pointSelect) {
-                pointSelect.innerHTML = '<option value="">-- Choose an event --</option>' + eventOptions;
-            }
-            if (awardPointSelect) {
-                awardPointSelect.innerHTML = '<option value="">-- Choose an event --</option>' + eventOptions;
-            }
-            if (analyticsSelect) {
-                analyticsSelect.innerHTML = '<option value="">-- All Events --</option>' + eventOptions;
-            }
-            if (editPointSelect) {
-                editPointSelect.innerHTML = '<option value="">-- Choose an event --</option>' + eventOptions;
-            }
+            const replaceOptions = (select, placeholder) => {
+                if (!select) return;
+                const selectedValue = select.value;
+                select.innerHTML = `<option value="">${placeholder}</option>${eventOptions}`;
+                if (Array.from(select.options).some(option => option.value === selectedValue)) {
+                    select.value = selectedValue;
+                }
+            };
+
+            replaceOptions(contenderSelect, '-- Choose an event --');
+            replaceOptions(voteSelect, '-- Choose an event --');
+            replaceOptions(voteSelectInline, '-- Choose an event --');
+            replaceOptions(pointSelect, '-- Choose an event --');
+            replaceOptions(awardPointSelect, '-- Choose an event --');
+            replaceOptions(analyticsSelect, '-- All Events --');
+            replaceOptions(editPointSelect, '-- Choose an event --');
         }
     } catch (error) {
         console.error('Error populating event selects:', error);
@@ -2170,10 +2165,13 @@ function formatNumber(n) {
     return num.toFixed(4).replace(/\.0+$|(?:(\.[0-9]*?)0+$)/, '$1');
 }
 
+let pointRankingRequestId = 0;
+
 // Load and display point ranking in Analytics
 async function loadPointRanking() {
     const eventId = document.getElementById('analyticsEventSelect').value;
     const rankingBody = document.getElementById('pointRankingBody');
+    const requestId = ++pointRankingRequestId;
     rankingBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#999;">Loading...</td></tr>';
 
     try {
@@ -2182,147 +2180,56 @@ async function loadPointRanking() {
         // Get events to fetch contenders from
         let eventsToCheck = [];
         if (eventId) {
-            eventsToCheck = [eventId];
+            const selectedEvent = document.getElementById('analyticsEventSelect').selectedOptions[0];
+            eventsToCheck = [{ id: eventId, name: selectedEvent ? selectedEvent.textContent : '' }];
         } else {
             // Get all events
             const eventsRes = await fetch(`${API_BASE_URL}/events`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+            if (!eventsRes.ok) throw new Error('Unable to load events for analytics');
             const eventsResult = await eventsRes.json();
-            eventsToCheck = (eventsResult.success && Array.isArray(eventsResult.data)) 
-                ? eventsResult.data.map(e => e.id)
-                : [];
+            if (!eventsResult.success || !Array.isArray(eventsResult.data)) {
+                throw new Error(eventsResult.error || 'Invalid events response');
+            }
+            eventsToCheck = eventsResult.data.map(e => ({ id: e.id, name: e.name }));
         }
 
         if (eventsToCheck.length === 0) {
+            if (requestId !== pointRankingRequestId) return;
             rankingBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#999;">No events found</td></tr>';
+            populateTopContenders([]);
             return;
         }
 
-        // Fetch all contenders and their point records
-        let allContenders = [];
-        for (const eid of eventsToCheck) {
-            try {
-                const res = await fetch(`${API_BASE_URL}/events/${eid}/contenders`);
-                const result = await res.json();
-                if (result.success && Array.isArray(result.data)) {
-                    allContenders = allContenders.concat(result.data.map(c => ({ ...c, event_id: eid })));
-                }
-            } catch (err) {
-                console.error(`Error fetching contenders for event ${eid}:`, err);
+        const eventResults = await Promise.all(eventsToCheck.map(async event => {
+            const response = await fetch(`${API_BASE_URL}/events/${encodeURIComponent(event.id)}/contender-points-breakdown`);
+            if (!response.ok) throw new Error(`Unable to load points for ${event.name || 'selected event'}`);
+            const result = await response.json();
+            if (!result.success || !Array.isArray(result.data)) {
+                throw new Error(result.error || `Invalid points response for ${event.name || 'selected event'}`);
             }
-        }
-
-        if (allContenders.length === 0) {
-            rankingBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#999;">No contenders found</td></tr>';
-            return;
-        }
-
-        // Fetch point records and vote records for each contender
-        const contendersWithBreakdown = [];
-        for (const contender of allContenders) {
-            try {
-                // Fetch admin-awarded point records
-                const recordsRes = await fetch(`${API_BASE_URL}/events/${contender.event_id}/contenders/${contender.id}/point-records`);
-                const recordsResult = await recordsRes.json();
-                const adminRecords = (recordsResult.success && Array.isArray(recordsResult.data)) ? recordsResult.data : [];
-
-                // Fetch vote records
-                const voteTablesRes = await fetch(`${API_BASE_URL}/events/${contender.event_id}/vote-tables`);
-                const voteTablesResult = await voteTablesRes.json();
-                const voteTables = (voteTablesResult.success && Array.isArray(voteTablesResult.data)) ? voteTablesResult.data : [];
-
-                // Get vote records for this contender
-                const votesRes = await fetch(`${API_BASE_URL}/events/${contender.event_id}/contenders/${contender.id}/votes`);
-                let voteRecords = [];
-                try {
-                    const voteResult = await votesRes.json();
-                    voteRecords = (voteResult.success && Array.isArray(voteResult.data)) ? voteResult.data : [];
-                } catch (err) {
-                    // If votes endpoint doesn't exist, we'll skip vote records
-                    
-                }
-
-                // Fetch all point tables for this event to get titles
-                const pointTablesRes = await fetch(`${API_BASE_URL}/events/${contender.event_id}/point-tables`);
-                const pointTablesResult = await pointTablesRes.json();
-                const pointTables = (pointTablesResult.success && Array.isArray(pointTablesResult.data)) ? pointTablesResult.data : [];
-
-                // Create a map of point table id to title
-                const pointTableMap = {};
-                for (const pt of pointTables) {
-                    pointTableMap[pt.id] = pt.title;
-                }
-
-                // Group admin points by point_table_id with title
-                const pointsByTable = {};
-                for (const rec of adminRecords) {
-                    const key = rec.point_table_id || 'unknown';
-                    if (!pointsByTable[key]) {
-                        pointsByTable[key] = { 
-                            id: rec.point_table_id, 
-                            title: pointTableMap[rec.point_table_id] || 'Unknown Type',
-                            points: 0 
-                        };
-                    }
-                    pointsByTable[key].points += rec.points_awarded;
-                }
-
-                // Add vote points
-                let totalVotePoints = 0;
-                const votePointsByTable = {};
-                
-                for (const vote of voteRecords) {
-                    const voteTable = voteTables.find(vt => vt.id === vote.vote_table_id);
-                    if (voteTable) {
-                        const votePoints = voteTable.points_per_vote || 0;
-                        totalVotePoints += votePoints;
-                        
-                        const key = `vote_${vote.vote_table_id}`;
-                        if (!votePointsByTable[key]) {
-                            votePointsByTable[key] = {
-                                id: vote.vote_table_id,
-                                title: `Votes (${voteTable.table_number || 'Table'})`,
-                                points: 0
-                            };
-                        }
-                        votePointsByTable[key].points += votePoints;
-                    }
-                }
-
-                // Add vote points to the breakdown
-                Object.assign(pointsByTable, votePointsByTable);
-
-                // Calculate total points (admin points + vote points)
-                const adminTotal = Object.values(pointsByTable).reduce((sum, pt) => {
-                    // Only count admin points (not vote points)
-                    return sum + (pt.title.includes('Votes') ? 0 : pt.points);
-                }, 0);
-                const totalPoints = adminTotal + totalVotePoints;
-
-                contendersWithBreakdown.push({
+            return result.data
+                .filter(contender => contender.event_id === event.id)
+                .map(contender => ({
                     ...contender,
-                    total_points: totalPoints,
-                    pointsByTable: Object.values(pointsByTable)
-                });
-            } catch (err) {
-                console.error(`Error fetching records for contender ${contender.id}:`, err);
-                contendersWithBreakdown.push({
-                    ...contender,
-                    total_points: contender.total_points || 0,
-                    pointsByTable: []
-                });
-            }
-        }
+                    event_name: event.name,
+                    pointsByTable: contender.points_breakdown || []
+                }));
+        }));
 
-        // Sort by total_points descending
-        contendersWithBreakdown.sort((a, b) => (b.total_points || 0) - (a.total_points || 0));
-
-        // Display ranking table
+        if (requestId !== pointRankingRequestId) return;
+        const contendersWithBreakdown = eventResults.flat();
         if (contendersWithBreakdown.length === 0) {
-            rankingBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#999;">No contenders with points</td></tr>';
+            rankingBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#999;">No contenders found</td></tr>';
+            populateTopContenders([]);
             return;
         }
+
+        contendersWithBreakdown.sort((a, b) =>
+            (b.total_points || 0) - (a.total_points || 0) ||
+            String(a.name || '').localeCompare(String(b.name || ''))
+        );
 
         rankingBody.innerHTML = contendersWithBreakdown.map((contender, index) => `
             <tr style="${index % 2 === 0 ? 'background-color:#f9f9f9;' : ''}">
@@ -2330,13 +2237,14 @@ async function loadPointRanking() {
                 <td style="padding:10px; border-bottom: 1px solid #ddd;">
                     <strong>${escapeHtml(contender.name || 'N/A')}</strong>
                     <br><small style="color:#666;">${escapeHtml(contender.class || '')} ${escapeHtml(contender.country || '')}</small>
+                    ${!eventId ? `<br><small style="color:#666;">${escapeHtml(contender.event_name || '')}</small>` : ''}
                 </td>
                 <td style="padding:10px; border-bottom: 1px solid #ddd; text-align:center; font-size:20px; font-weight:bold; color:#2ecc71;">
                     ${contender.total_points || 0}
                 </td>
                 <td style="padding:10px; border-bottom: 1px solid #ddd; font-size:12px;">
-                    ${contender.pointsByTable.length > 0 
-                        ? contender.pointsByTable.map((pt, idx) => `<span style="display:inline-block; margin-right:5px; margin-bottom:3px; background:#e0e0e0; padding:3px 6px; border-radius:3px;">${pt.points || 0} pts (${escapeHtml(pt.title || 'Unknown')})</span>`).join('')
+                    ${contender.pointsByTable.length > 0
+                        ? contender.pointsByTable.map(pt => `<span style="display:inline-block; margin-right:5px; margin-bottom:3px; background:#e0e0e0; padding:3px 6px; border-radius:3px;">${pt.points || 0} pts (${escapeHtml(pt.title || 'Unknown')}${pt.count > 1 ? ` ×${pt.count}` : ''})</span>`).join('')
                         : '<em style="color:#999;">No point records</em>'
                     }
                 </td>
@@ -2347,8 +2255,10 @@ async function loadPointRanking() {
         populateTopContenders(contendersWithBreakdown.slice(0, 5));
 
     } catch (err) {
+        if (requestId !== pointRankingRequestId) return;
         console.error('Error loading point ranking:', err);
-        rankingBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:#d32f2f;">Error: ${err.message}</td></tr>`;
+        rankingBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:#d32f2f;">Error: ${escapeHtml(err.message)}</td></tr>`;
+        populateTopContenders([]);
     }
 }
 
@@ -2397,6 +2307,7 @@ function populateTopContenders(topContenders) {
                     <p style="margin: 0 0 10px 0; opacity: 0.9; font-size: 14px;">
                         ${escapeHtml(contender.class || '')} ${escapeHtml(contender.country || '')}
                     </p>
+                    ${!document.getElementById('analyticsEventSelect').value ? `<p style="margin: 0 0 10px; opacity: 0.9; font-size: 13px;">${escapeHtml(contender.event_name || '')}</p>` : ''}
                     <div style="display: flex; flex-wrap: wrap; gap: 5px;">
                         ${pointsBreakdown.map(pt => `
                             <span style="

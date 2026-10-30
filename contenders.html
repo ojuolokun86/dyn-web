@@ -378,6 +378,45 @@
             padding: 10px;
         }
 
+        .modal-points {
+            background: #f5f7ff;
+            border: 1px solid #dfe4ff;
+            border-radius: 12px;
+            padding: 18px;
+            margin: 20px 0;
+        }
+
+        .modal-points h3 {
+            color: #333;
+            margin: 0 0 12px;
+        }
+
+        .modal-points-total {
+            color: #5b65c9;
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .modal-points-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .modal-points-item {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            background: white;
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: #444;
+        }
+
+        .modal-points-item strong {
+            white-space: nowrap;
+        }
+
         .modal-action {
             margin-top: 25px;
             padding-top: 20px;
@@ -524,6 +563,24 @@
         @media (max-width: 600px) {
             .container {
                 padding: 28px 16px;
+            }
+
+            .modal-content {
+                width: calc(100% - 24px);
+                max-height: 90vh;
+            }
+
+            .modal-header {
+                height: 220px;
+            }
+
+            .modal-body {
+                padding: 20px;
+            }
+
+            .modal-points-item span {
+                min-width: 0;
+                overflow-wrap: anywhere;
             }
 
             .contenders-header h1 {
@@ -693,6 +750,10 @@
                     <h3>🏆 Hall of Fame</h3>
                     <div id="trophyContent"></div>
                 </div>
+                <section id="modalPoints" class="modal-points" aria-live="polite">
+                    <h3>Event Points Breakdown</h3>
+                    <div class="modal-points-total">Loading points...</div>
+                </section>
                 <div class="modal-description" id="modalDescription"></div>
                 <div class="modal-action">
                     <button class="vote-btn" onclick="goToVote()">🗳️ Vote for this Contender</button>
@@ -710,6 +771,7 @@
         let allContenders = [];
         let hallOfFameData = null; // Cache for hall of fame data
         let showingPastContenders = false;
+        let contenderPointsRequestId = 0;
 
         // Load hall of fame data
         async function loadHallOfFameData() {
@@ -854,6 +916,48 @@
             renderContenders();
         }
 
+        async function loadContenderPoints(contender) {
+            const requestId = ++contenderPointsRequestId;
+            const pointsSection = document.getElementById('modalPoints');
+            pointsSection.innerHTML = '<h3>Event Points Breakdown</h3><div class="modal-points-total">Loading points...</div>';
+
+            if (!contender.event_id) {
+                pointsSection.innerHTML = '<h3>Event Points Breakdown</h3><p>Points are unavailable for this event.</p>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/events/${encodeURIComponent(contender.event_id)}/contender-points-breakdown`);
+                if (!response.ok) throw new Error('Unable to load event points');
+                const result = await response.json();
+                if (!result.success || !Array.isArray(result.data)) {
+                    throw new Error(result.error || 'Invalid event points response');
+                }
+
+                if (requestId !== contenderPointsRequestId || window.selectedContenderId !== contender.id) return;
+                const points = result.data.find(item => item.id === contender.id && item.event_id === contender.event_id);
+                if (!points) throw new Error('Points for this contender were not found');
+
+                const breakdown = points.points_breakdown || [];
+                pointsSection.innerHTML = `
+                    <h3>Event Points Breakdown</h3>
+                    <div class="modal-points-total">${Number(points.total_points || 0).toLocaleString()} total points</div>
+                    ${breakdown.length
+                        ? `<div class="modal-points-list">${breakdown.map(item => `
+                            <div class="modal-points-item">
+                                <span>${escapeHtml(item.title || 'Points')} <small>(${item.type === 'vote' ? `${item.count} vote${item.count === 1 ? '' : 's'}` : `${item.count} award${item.count === 1 ? '' : 's'}`})</small></span>
+                                <strong>${Number(item.points || 0).toLocaleString()} pts</strong>
+                            </div>
+                        `).join('')}</div>`
+                        : '<p>No points have been recorded for this event yet.</p>'}
+                `;
+            } catch (error) {
+                if (requestId !== contenderPointsRequestId || window.selectedContenderId !== contender.id) return;
+                console.error('Error loading contender points:', error);
+                pointsSection.innerHTML = `<h3>Event Points Breakdown</h3><p>Unable to load points: ${escapeHtml(error.message)}</p>`;
+            }
+        }
+
         function showDetails(contenderId) {
             const contender = allContenders.find(c => c.id === contenderId);
             if (!contender) return;
@@ -905,6 +1009,7 @@
 
             // Show modal
             document.getElementById('detailModal').classList.add('active');
+            loadContenderPoints(contender);
         }
 
         function closeModal() {
